@@ -13,7 +13,7 @@
     * Client
     * Cashier
 5. Opens a thread for director
-6. For each cashier there is a FIFO queue where clients waits for their turn and a FIFO queue where clients put products
+6. For each cashier there is a FIFO queue where clients waits for their turn
     * client pushes the read side of a pipe without name on a FIFO queue and waits for his turn doing a read on the pipe
     * cashier owner of that pipe pops a pipe and writes a message 
         * "next" client wake up and start passing products
@@ -34,6 +34,7 @@
 
 ## Cashier
 1. takes as parameters:
+    * id
     * fixed time
 
 ## Director
