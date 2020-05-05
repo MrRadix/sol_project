@@ -78,6 +78,10 @@ void *client(void *arg) {
     int ca_2_cl[2];
     int response;
     int read_val;
+    
+    /**
+     * TODO: close pipes once finished
+     */
 
     fprintf(stderr, "started client %d\n", id);
 
