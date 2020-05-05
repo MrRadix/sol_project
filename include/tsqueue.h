@@ -7,8 +7,8 @@ typedef struct _int_fifo_tsqueue_t {
     int dim;
     int head;
     int tail;
-    pthread_mutex_t *mutex;
-    pthread_cond_t *empty;
+    pthread_mutex_t mutex;
+    pthread_cond_t empty;
 } int_fifo_tsqueue_t;
 
 /**
