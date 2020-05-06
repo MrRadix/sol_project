@@ -3,69 +3,115 @@
 #include <string.h>
 #include "tsqueue.h"
 
-void int_fifo_tsqueue_init(int_fifo_tsqueue_t *queue, int n) {
+int int_fifo_tsqueue_init(int_fifo_tsqueue_t *queue, int n) {
+
+    if (pthread_mutex_init(&queue->mutex, NULL) != 0) {
+        perror("tsqueue error during mutex initialization");
+        return -1;
+    }
+
+    if (pthread_cond_init(&queue->empty, NULL) != 0) {
+        perror("tsqueue error during condition variable initialization");
+        return -1;
+    }
+
     queue->buff = (int*)malloc(n*sizeof(int));
 
     queue->dim = n;
     queue->head = 0;
     queue->tail = 0;
 
-    
-    pthread_mutex_init(&queue->mutex, NULL);
-    pthread_cond_init(&queue->empty, NULL);
+    return EXIT_SUCCESS;
 }
 
-void int_fifo_tsqueue_realloc(int_fifo_tsqueue_t *queue) {
+int int_fifo_tsqueue_realloc(int_fifo_tsqueue_t *queue) {
     
-    pthread_mutex_lock(&queue->mutex);
+    if (pthread_mutex_lock(&queue->mutex) != 0) {
+        perror("tsqueue error during mutex locking");
+        return -1;
+    }
 
     int *p = realloc(queue->buff, queue->dim*2*sizeof(int));
 
     if (!p) {
-        perror("error during realloc");
+        perror("tsqueue error during realloc");
         pthread_mutex_unlock(&queue->mutex);
         
-        return;
+        return -1;
     } else {
         queue->buff = p;
     }
 
     queue->dim = queue->dim*2;
 
-    pthread_mutex_unlock(&queue->mutex);
+    if (pthread_mutex_unlock(&queue->mutex) != 0) {
+        perror("tsqueue error during mutex unlocking");
+        return -1;
+    }
+
+    return EXIT_SUCCESS;
 }
 
-void int_fifo_tsqueue_free(int_fifo_tsqueue_t *queue) {
-    pthread_mutex_lock(&queue->mutex);
+int int_fifo_tsqueue_free(int_fifo_tsqueue_t *queue) {
+    
+    if (pthread_mutex_lock(&queue->mutex) != 0) {
+        perror("tsqueue error during mutex locking");
+        return -1;
+    }
 
     free(queue->buff);
 
-    pthread_mutex_unlock(&queue->mutex);
+    if (pthread_mutex_unlock(&queue->mutex) != 0) {
+        perror("tsqueue error during mutex unlocking");
+        return -1;
+    }
+
     pthread_mutex_destroy(&queue->mutex);
     pthread_cond_destroy(&queue->empty);
+
+    return EXIT_SUCCESS;
 }
 
 int int_fifo_tsqueue_isfull(int_fifo_tsqueue_t queue) {
     
-    pthread_mutex_lock(&queue.mutex);
+    if (pthread_mutex_lock(&queue.mutex) != 0) {
+        perror("tsqueue error during mutex locking");
+        return -1;
+    }
+    
     int ret = (queue.tail+1) % queue.dim == queue.head;
-    pthread_mutex_unlock(&queue.mutex);
+    
+    if (pthread_mutex_unlock(&queue.mutex) != 0) {
+        perror("tsqueue error during mutex unlocking");
+        return -1;
+    }
 
     return ret;
 }
 
 int int_fifo_tsqueue_isempty(int_fifo_tsqueue_t queue) {
 
-    pthread_mutex_lock(&queue.mutex);
+    if (pthread_mutex_lock(&queue.mutex) != 0) {
+        perror("tsqueue error during mutex locking");
+        return -1;
+    }
+
     int ret = queue.tail == queue.head;
-    pthread_mutex_unlock(&queue.mutex);
+    
+    if (pthread_mutex_unlock(&queue.mutex) != 0) {
+        perror("tsqueue error during mutex unlocking");
+        return -1;
+    }
 
     return ret;
 }
 
-void int_fifo_tsqueue_push(int_fifo_tsqueue_t *queue, int el) {
+int int_fifo_tsqueue_push(int_fifo_tsqueue_t *queue, int el) {
 
-    pthread_mutex_lock(&queue->mutex);
+    if (pthread_mutex_lock(&queue->mutex) != 0) {
+        perror("tsqueue error during mutex locking");
+        return -1;
+    }
 
     // checks if queue is full
     if (ISFULL((*queue))) {
@@ -76,19 +122,33 @@ void int_fifo_tsqueue_push(int_fifo_tsqueue_t *queue, int el) {
 
     queue->tail = (queue->tail + 1) % queue->dim;
 
-    pthread_cond_signal(&queue->empty);
+    if (pthread_cond_signal(&queue->empty) != 0) {
+        perror("tsqueue error during condition variable signaling");
+        return -1;
+    }
 
-    pthread_mutex_unlock(&queue->mutex);
+    if (pthread_mutex_unlock(&queue->mutex) != 0) {
+        perror("tsqueue error during mutex unlocking");
+        return -1;
+    }
+
+    return EXIT_SUCCESS;
 }
 
 int int_fifo_tsqueue_pop(int_fifo_tsqueue_t *queue) {
     int ret;
 
-    pthread_mutex_lock(&queue->mutex);
+    if (pthread_mutex_lock(&queue->mutex) != 0) {
+        perror("tsqueue error during mutex locking");
+        return -1;
+    }
 
     // checks if queue is empty
     if (ISEMPTY((*queue))) {
-        pthread_mutex_unlock(&queue->mutex);
+        if (pthread_mutex_unlock(&queue->mutex) != 0) {
+            perror("tsqueue error during mutex unlocking");
+            return -1;
+        }
 
         return -1;
     }
@@ -96,7 +156,10 @@ int int_fifo_tsqueue_pop(int_fifo_tsqueue_t *queue) {
     ret = queue->buff[queue->head];
     queue->head = (queue->head + 1) % queue->dim;
 
-    pthread_mutex_unlock(&queue->mutex);
+    if (pthread_mutex_unlock(&queue->mutex) != 0) {
+        perror("tsqueue error during mutex unlocking");
+        return -1;
+    }
 
     return ret;
 }

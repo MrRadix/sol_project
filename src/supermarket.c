@@ -4,7 +4,7 @@
 #include <stdlib.h>
 
 #define K 2     // cashers number
-#define C 2     // customers number
+#define C 100     // customers number
 #define E 10    // customers every group
 #define T 100   // max time for purchases in milliseconds
 #define P 40    // max number of product for each customer

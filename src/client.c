@@ -6,34 +6,40 @@
 #include <errno.h>
 #include <stdio.h>
 
-void client_mutex_lock(pthread_mutex_t *mtx, void *p) {
+void client_mutex_lock(pthread_mutex_t *mtx, void *p, int pipe[2]) {
     int err;
 
     if ((err = pthread_mutex_lock(mtx)) != 0) {
         errno = err;
         perror("lock");
         free(p);
+        close(pipe[0]);
+        close(pipe[1]);
         pthread_exit((void*)EXIT_FAILURE);
     }
 }
 
-void client_mutex_unlock(pthread_mutex_t *mtx, void *p) {
+void client_mutex_unlock(pthread_mutex_t *mtx, void *p, int pipe[2]) {
     int err;
 
     if ((err = pthread_mutex_unlock(mtx)) != 0) {
         errno = err;
         perror("lock");
         free(p);
+        close(pipe[0]);
+        close(pipe[1]);
         pthread_exit((void*)EXIT_FAILURE);
     }
 }
 
-void client_cond_signal(pthread_cond_t *cond, void *p) {
+void client_cond_signal(pthread_cond_t *cond, void *p, int pipe[2]) {
     int err;
 
     if ((err = pthread_cond_signal(cond)) != 0) {
         errno = err;
         perror("lock");
+        close(pipe[0]);
+        close(pipe[1]);
         free(p);
         pthread_exit((void*)EXIT_FAILURE);
     }
@@ -78,10 +84,6 @@ void *client(void *arg) {
     int ca_2_cl[2];
     int response;
     int read_val;
-    
-    /**
-     * TODO: close pipes once finished
-     */
 
     fprintf(stderr, "started client %d\n", id);
 
@@ -101,6 +103,8 @@ void *client(void *arg) {
 
     if (quit){ 
         free(arg);
+        close(ca_2_cl[0]);
+        close(ca_2_cl[1]);
         pthread_exit((void*)EXIT_SUCCESS);
     }
 
@@ -111,20 +115,30 @@ void *client(void *arg) {
         while (!cashier_open) {
             cashier_id = rand_r(&seed) % (max_cash);
 
-            client_mutex_lock(&state_lock[cashier_id], arg);
+            client_mutex_lock(&state_lock[cashier_id], arg, ca_2_cl);
             cashier_open = state[cashier_id];
-            client_mutex_unlock(&state_lock[cashier_id], arg);
+            client_mutex_unlock(&state_lock[cashier_id], arg, ca_2_cl);
         }
 
         if (quit){ 
             free(arg);
+            close(ca_2_cl[0]);
+            close(ca_2_cl[1]);
             pthread_exit((void*)EXIT_SUCCESS);
         }
 
-        int_fifo_tsqueue_push(&cash_q[cashier_id], ca_2_cl[1]);
+        if (int_fifo_tsqueue_push(&cash_q[cashier_id], ca_2_cl[1]) != 0) {
+            perror("client error during queue push operation");
+            free(arg);
+            close(ca_2_cl[0]);
+            close(ca_2_cl[1]);
+            pthread_exit((void*)EXIT_FAILURE);
+        }
 
         if (quit){ 
             free(arg);
+            close(ca_2_cl[0]);
+            close(ca_2_cl[1]);
             pthread_exit((void*)EXIT_SUCCESS);
         }
 
@@ -145,6 +159,8 @@ void *client(void *arg) {
                 if (read_val != EINTR) {
                     perror("error during read");
                     free(arg);
+                    close(ca_2_cl[0]);
+                    close(ca_2_cl[1]);
                     pthread_exit((void*)EXIT_FAILURE);
                 } else {
                     continue;
@@ -176,7 +192,7 @@ void *client(void *arg) {
     data.q_viewed = queues_viewed;
     data.sm_time = enter_time-time(NULL);
 
-    client_mutex_lock(&buff_lock[cashier_id], arg);
+    client_mutex_lock(&buff_lock[cashier_id], arg, ca_2_cl);
 
     buff[cashier_id].id = data.id;
     buff[cashier_id].q_time = data.q_time;
@@ -186,9 +202,11 @@ void *client(void *arg) {
 
     buff_is_empty[cashier_id] = 0;
 
-    client_cond_signal(&buff_empty[cashier_id], arg);
-    client_mutex_unlock(&buff_lock[cashier_id], arg);
+    client_cond_signal(&buff_empty[cashier_id], arg, ca_2_cl);
+    client_mutex_unlock(&buff_lock[cashier_id], arg, ca_2_cl);
 
     free(arg);
+    close(ca_2_cl[0]);
+    close(ca_2_cl[1]);
     pthread_exit((void*)EXIT_SUCCESS);
 }

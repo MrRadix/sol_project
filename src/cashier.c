@@ -69,6 +69,7 @@ void *cashier(void *arg) {
     int time        = ((struct cashier_args *)arg)->time;
     int prod_time   = ((struct cashier_args *)arg)->prod_time;
     int open        = 1;
+    int is_empty;
     int cpipe;
     client_data data;
 
@@ -84,10 +85,6 @@ void *cashier(void *arg) {
 
     /**
      * TODO: send to director cashier data when finishes
-     */
-
-    /**
-     * TODO: tsqueue functions returns a value for check if there was errors
      */
 
     while (open) {
@@ -116,7 +113,11 @@ void *cashier(void *arg) {
             break;
         }
 
-        cpipe = int_fifo_tsqueue_pop(&cash_q[id]);
+        if ((cpipe = int_fifo_tsqueue_pop(&cash_q[id])) < 0) {
+            perror("cashier error during pop from queue");
+            free(arg);
+            pthread_exit((void*)EXIT_FAILURE);
+        }
 
         int message = NEXT;
         write(cpipe, &message, sizeof(int));
@@ -155,14 +156,28 @@ void *cashier(void *arg) {
     /**
      * sending of close message to enqueued customers
      */
-    while(!int_fifo_tsqueue_isempty(cash_q[id])) {
-        cpipe = int_fifo_tsqueue_pop(&cash_q[id]);
+    is_empty = int_fifo_tsqueue_isempty(cash_q[id]);
+    while(!is_empty && is_empty >= 0) {
+        
+        if ((cpipe = int_fifo_tsqueue_pop(&cash_q[id]) < 0)) {
+            perror("cashier error during pop from queue");
+            free(arg);
+            pthread_exit((void*)EXIT_FAILURE);
+        }
+
         write(cpipe, CLOSING, sizeof(int));
+
+        is_empty = int_fifo_tsqueue_isempty(cash_q[id]);
+    }
+    if (is_empty < 0) {
+        perror("cashier error during checking if queue was empty");
+        free(arg);
+        pthread_exit((void*)EXIT_FAILURE);
     }
 
     free(arg);
 
-    pthread_exit((void*)0);
+    pthread_exit((void*)EXIT_SUCCESS);
 }
 
 void cash_state_init(int **st, int dim, int val) {
@@ -177,7 +192,11 @@ void cash_queue_init(int_fifo_tsqueue_t **queue, int dim, int buff_dim) {
     *queue = (int_fifo_tsqueue_t *)malloc(dim*sizeof(int_fifo_tsqueue_t));
 
     for (int i = 0; i<dim; i++) {
-        int_fifo_tsqueue_init(&(*queue)[i], buff_dim);
+        if (int_fifo_tsqueue_init(&(*queue)[i], buff_dim) != 0) {
+            perror("error during initialize cashes queues");
+            free(*queue);
+            return;
+        }
     }
 }
 

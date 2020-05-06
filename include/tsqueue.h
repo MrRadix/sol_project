@@ -16,17 +16,17 @@ typedef struct _int_fifo_tsqueue_t {
  *  - queue:    queue to initialize
  *  - n:        queue dimention
  */
-void int_fifo_tsqueue_init(int_fifo_tsqueue_t *queue, int n);
+int int_fifo_tsqueue_init(int_fifo_tsqueue_t *queue, int n);
 
 /**
  * effect: doubles the queue size
  */
-void int_fifo_tsqueue_realloc(int_fifo_tsqueue_t *queue);
+int int_fifo_tsqueue_realloc(int_fifo_tsqueue_t *queue);
 
 /**
  * effects: frees queue allocation in heap
  */
-void int_fifo_tsqueue_free(int_fifo_tsqueue_t *queue);
+int int_fifo_tsqueue_free(int_fifo_tsqueue_t *queue);
 
 /**
  * returns 1 if queue is full 0 otherwise
@@ -45,7 +45,7 @@ int int_fifo_tsqueue_isempty(int_fifo_tsqueue_t queue);
  * 
  * effects: adds element to queue
  */
-void int_fifo_tsqueue_push(int_fifo_tsqueue_t *queue, int el);
+int int_fifo_tsqueue_push(int_fifo_tsqueue_t *queue, int el);
 
 /**
  * effects: remove element pointed by head
