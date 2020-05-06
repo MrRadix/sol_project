@@ -115,7 +115,20 @@ int int_fifo_tsqueue_push(int_fifo_tsqueue_t *queue, int el) {
 
     // checks if queue is full
     if (ISFULL((*queue))) {
-        int_fifo_tsqueue_realloc(queue);
+        if (pthread_mutex_unlock(&queue->mutex) != 0) {
+            perror("tsqueue error during mutex unlocking");
+            return -1;
+        }
+
+        if (int_fifo_tsqueue_realloc(queue) != 0) {
+            perror("tsqueue error during realloc operation");
+            return -1;
+        }
+
+        if (pthread_mutex_lock(&queue->mutex) != 0) {
+            perror("tsqueue error during mutex locking");
+            return -1;
+        }
     }
 
     queue->buff[queue->tail] = el;
