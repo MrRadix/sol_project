@@ -108,6 +108,10 @@ void *client(void *arg) {
         pthread_exit((void*)EXIT_SUCCESS);
     }
 
+    /**
+     * TODO: client with 0 product requests exit to director
+     */ 
+
     enter_queue_time = time(NULL);
     while (!exit_queue) {
 
