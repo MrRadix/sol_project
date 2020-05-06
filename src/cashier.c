@@ -83,10 +83,6 @@ void *cashier(void *arg) {
      * TODO: send to director client data
      */
 
-    /**
-     * TODO: send to director cashier data when finishes
-     */
-
     while (open) {
 
         /**
