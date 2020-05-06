@@ -52,7 +52,7 @@ Mkfile.old
 dkms.conf
 
 # Visual Studio Code files
-#./vscode
+./vscode
 
 # bin files
-#./bin/*
+./bin/*
