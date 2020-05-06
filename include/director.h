@@ -1,3 +1,6 @@
+#define MIN_KTIME 20    // min time for a cashier in milliseconds
+#define MAX_KTIME 80    // max time for a cashier in milliseconds
+
 
 struct director_args {
     int n_clients;          // C
