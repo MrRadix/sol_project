@@ -145,7 +145,7 @@ void *client(void *arg) {
             pthread_exit((void*)EXIT_SUCCESS);
         }
 
-        if (int_fifo_tsqueue_push(&cash_q[cashier_id], ca_2_cl[1]) != 0) {
+        if (fifo_tsqueue_push(&cash_q[cashier_id], (void*)&ca_2_cl[1], sizeof(ca_2_cl[1])) != 0) {
             perror("client error during queue push operation");
             free(arg);
             close(ca_2_cl[0]);

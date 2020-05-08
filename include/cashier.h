@@ -62,7 +62,7 @@ pthread_cond_t *buff_empty;
 /**
  * for each cashier: queue where customers waits
  */
-int_fifo_tsqueue_t *cash_q;
+fifo_tsqueue_t *cash_q;
 
 /**
  * if quit = 1 clients quits immediatly for supermarket closing

@@ -14,16 +14,17 @@ typedef struct _int_fifo_tsqueue_t {
 } int_fifo_tsqueue_t;
 */
 typedef struct _ts_queue_el {
-    int el;
+    void *el;
     struct _ts_queue_el *next;
 } ts_queue_el;
 
-typedef struct _int_fifo_tsqueue_t {
+typedef struct _fifo_tsqueue_t {
     ts_queue_el *head;
     ts_queue_el *tail;
+    int n_elements;
     pthread_mutex_t mutex;
     pthread_cond_t empty;
-} int_fifo_tsqueue_t;
+} fifo_tsqueue_t;
 
 
 /**
@@ -31,27 +32,27 @@ typedef struct _int_fifo_tsqueue_t {
  *  - queue:    queue to initialize
  *  - n:        queue dimention
  */
-int int_fifo_tsqueue_init(int_fifo_tsqueue_t *queue, int n);
+int fifo_tsqueue_init(fifo_tsqueue_t *queue);
 
 /**
  * effect: doubles the queue size
  */
-int int_fifo_tsqueue_realloc(int_fifo_tsqueue_t *queue);
+int fifo_tsqueue_realloc(fifo_tsqueue_t *queue);
 
 /**
  * effects: frees queue allocation in heap
  */
-int int_fifo_tsqueue_free(int_fifo_tsqueue_t *queue);
+int fifo_tsqueue_free(fifo_tsqueue_t *queue);
 
 /**
  * returns 1 if queue is full 0 otherwise
  */
-int in_fifo_tsqueue_isfull(int_fifo_tsqueue_t queue);
+int fifo_tsqueue_isfull(fifo_tsqueue_t queue);
 
 /**
  * returns 1 if queue is empty 0 otherwise
  */
-int int_fifo_tsqueue_isempty(int_fifo_tsqueue_t queue);
+int fifo_tsqueue_isempty(fifo_tsqueue_t queue);
 
 /**
  * params:
@@ -60,9 +61,9 @@ int int_fifo_tsqueue_isempty(int_fifo_tsqueue_t queue);
  * 
  * effects: adds element to queue
  */
-int int_fifo_tsqueue_push(int_fifo_tsqueue_t *queue, int el);
+int fifo_tsqueue_push(fifo_tsqueue_t *queue, void *el, size_t size);
 
 /**
  * effects: remove element pointed by head
  */
-int int_fifo_tsqueue_pop(int_fifo_tsqueue_t *queue);
+void *fifo_tsqueue_pop(fifo_tsqueue_t *queue);

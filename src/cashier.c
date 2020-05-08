@@ -113,7 +113,7 @@ void *cashier(void *arg) {
             break;
         }
 
-        if ((cpipe = int_fifo_tsqueue_pop(&cash_q[id])) < 0) {
+        if ((cpipe = *(int*)fifo_tsqueue_pop(&cash_q[id])) < 0) {
             perror("cashier error during pop from queue");
             free(arg);
             pthread_exit((void*)EXIT_FAILURE);
@@ -154,10 +154,10 @@ void *cashier(void *arg) {
     /**
      * sending of close message to enqueued customers
      */
-    is_empty = int_fifo_tsqueue_isempty(cash_q[id]);
+    is_empty = fifo_tsqueue_isempty(cash_q[id]);
     while(!is_empty && is_empty >= 0) {
         
-        if ((cpipe = int_fifo_tsqueue_pop(&cash_q[id]) < 0)) {
+        if ((cpipe = *(int*)fifo_tsqueue_pop(&cash_q[id]) < 0)) {
             perror("cashier error during pop from queue");
             free(arg);
             pthread_exit((void*)EXIT_FAILURE);
@@ -165,7 +165,7 @@ void *cashier(void *arg) {
 
         write(cpipe, CLOSING, sizeof(int));
 
-        is_empty = int_fifo_tsqueue_isempty(cash_q[id]);
+        is_empty = fifo_tsqueue_isempty(cash_q[id]);
     }
     if (is_empty < 0) {
         perror("cashier error during checking if queue was empty");
@@ -186,11 +186,11 @@ void cash_state_init(int **st, int dim, int val) {
     }
 }
 
-void cash_queue_init(int_fifo_tsqueue_t **queue, int dim, int buff_dim) {
-    *queue = (int_fifo_tsqueue_t *)malloc(dim*sizeof(int_fifo_tsqueue_t));
+void cash_queue_init(fifo_tsqueue_t **queue, int dim) {
+    *queue = (fifo_tsqueue_t *)malloc(dim*sizeof(fifo_tsqueue_t));
 
     for (int i = 0; i<dim; i++) {
-        if (int_fifo_tsqueue_init(&(*queue)[i], buff_dim) != 0) {
+        if (fifo_tsqueue_init(&(*queue)[i]) != 0) {
             perror("error during initialize cashes queues");
             free(*queue);
             return;
@@ -219,7 +219,7 @@ void cash_buff_init(client_data **buff, int dim) {
 }
 
 void cashier_thread_init(int n_cashiers, int n_clients) {
-    cash_queue_init(&cash_q, n_cashiers, n_clients);
+    cash_queue_init(&cash_q, n_cashiers);
     cash_lock_init(&state_lock, n_cashiers);
     cash_lock_init(&buff_lock, n_cashiers);
     cash_cond_init(&buff_empty, n_cashiers);
