@@ -90,12 +90,13 @@ void *clients_handler(void *arg) {
 
 // int k, int c, int prod_time, int def_number, int s1, int s2
 void *cashiers_handler(void *arg) {
-    int k           = ((struct cashiers_handler_args *)arg)->n_cashiers;
-    int c           = ((struct cashiers_handler_args *)arg)->n_clients;
-    int prod_time   = ((struct cashiers_handler_args *)arg)->product_time;
-    int def_number  = ((struct cashiers_handler_args *)arg)->def_cashiers_number;
-    int s1          = ((struct cashiers_handler_args *)arg)->s1;
-    int s2          = ((struct cashiers_handler_args *)arg)->s2;
+    int k               = ((struct cashiers_handler_args *)arg)->n_cashiers;
+    int c               = ((struct cashiers_handler_args *)arg)->n_clients;
+    int prod_time       = ((struct cashiers_handler_args *)arg)->product_time;
+    int def_number      = ((struct cashiers_handler_args *)arg)->def_cashiers_number;
+    int analytics_time  = ((struct cashiers_handler_args *)arg)->analytics_t_intervall;
+    int s1              = ((struct cashiers_handler_args *)arg)->s1;
+    int s2              = ((struct cashiers_handler_args *)arg)->s2;
 
     struct cashier_args *ca_args;
     pthread_t cashier_thread;
@@ -112,6 +113,7 @@ void *cashiers_handler(void *arg) {
         ca_args = (struct cashier_args*)malloc(sizeof(struct cashier_args));
         ca_args->id = i;
         ca_args->time = (rand_r(&seed) % (MAX_KTIME - MIN_KTIME + 1)) + MIN_KTIME;
+        ca_args->analytics_time = analytics_time;
         ca_args->prod_time = prod_time;
 
         pthread_create(&cashier_thread, NULL, cashier, (void *)ca_args);
@@ -132,6 +134,7 @@ void *director(void *arg) {
     int t               = ((struct director_args *)arg)->client_max_time;
     int p               = ((struct director_args *)arg)->n_max_product;
     int def_cash_n      = ((struct director_args *)arg)->def_cashiers_number;
+    int analytics_time  = ((struct director_args *)arg)->analytics_t_intervall;
     int s1              = ((struct director_args *)arg)->s1;
     int s2              = ((struct director_args *)arg)->s2;
 
@@ -166,6 +169,7 @@ void *director(void *arg) {
     ca_h_args->n_clients = c;
     ca_h_args->def_cashiers_number = def_cash_n;
     ca_h_args->product_time = prod_time;
+    ca_h_args->analytics_t_intervall = analytics_time;
     ca_h_args->s1 = s1;
     ca_h_args->s2 = s2;
 

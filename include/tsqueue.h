@@ -3,16 +3,11 @@
 //#define ISEMPTY(queue) queue.tail == queue.head
 #define ISEMPTY(queue) queue.head == NULL
 
-/**
-typedef struct _int_fifo_tsqueue_t {
-    int *buff;
-    int dim;
-    int head;
-    int tail;
-    pthread_mutex_t mutex;
-    pthread_cond_t empty;
-} int_fifo_tsqueue_t;
-*/
+struct analytics_args {
+    int intervall;
+    int id;
+};
+
 typedef struct _ts_queue_el {
     void *el;
     struct _ts_queue_el *next;
@@ -67,3 +62,8 @@ int fifo_tsqueue_push(fifo_tsqueue_t *queue, void *el, size_t size);
  * effects: remove element pointed by head
  */
 void *fifo_tsqueue_pop(fifo_tsqueue_t *queue);
+
+/**
+ * effects: returns number of element in queue
+ */
+int fifo_tsqueue_n_items(fifo_tsqueue_t *queue);

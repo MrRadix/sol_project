@@ -47,7 +47,29 @@ void cashier_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mtx, int id, void 
     }
 }
 
-//void *analytics(void *arg) {}
+void *analytics(void *arg) {
+    int intervall   = ((struct analytics_args*)arg)->intervall;
+    int id          = ((struct analytics_args*)arg)->id;
+
+    struct timespec *res = (struct timespec *)malloc(sizeof(struct timespec));
+    struct timespec *rem = (struct timespec *)malloc(sizeof(struct timespec));
+
+    struct analytics_data *data;
+
+    while (!quit && !closing) {
+
+        res->tv_sec = 0;
+        res->tv_nsec = intervall;
+
+        if (nanosleep(res, rem) == -1) {
+            nanosleep(rem, NULL);
+        }
+
+        data = (struct analytics_data *)malloc(sizeof(struct analytics_data));
+        data->id = id;
+    }
+
+}
 
 void pass_products(long nsec) {
     struct timespec *res = (struct timespec *)malloc(sizeof(struct timespec));
@@ -65,10 +87,11 @@ void pass_products(long nsec) {
 } 
 
 void *cashier(void *arg) {
-    int id          = ((struct cashier_args *)arg)->id;
-    int time        = ((struct cashier_args *)arg)->time;
-    int prod_time   = ((struct cashier_args *)arg)->prod_time;
-    int open        = 1;
+    int id              = ((struct cashier_args *)arg)->id;
+    int time            = ((struct cashier_args *)arg)->time;
+    int analytics_time  = ((struct cashier_args *)arg)->analytics_time;
+    int prod_time       = ((struct cashier_args *)arg)->prod_time;
+    int open            = 1;
     int is_empty;
     int cpipe;
     client_data data;
@@ -226,4 +249,6 @@ void cashier_thread_init(int n_cashiers, int n_clients) {
     cash_state_init(&buff_is_empty, n_cashiers, 1);
     cash_state_init(&state, n_cashiers, 0);
     cash_buff_init(&buff, n_cashiers);
+
+    fifo_tsqueue_init(&analytics_q);
 }

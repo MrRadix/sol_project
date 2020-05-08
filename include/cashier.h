@@ -20,9 +20,15 @@ struct cashier_analytics {
     time_t timestamp;
 };
 
+struct analytics_data {
+    int n_clients;
+    int id;
+};
+
 struct cashier_args {
     int id;
     int time;
+    int analytics_time;
     int prod_time;
 };
 
@@ -63,6 +69,13 @@ pthread_cond_t *buff_empty;
  * for each cashier: queue where customers waits
  */
 fifo_tsqueue_t *cash_q;
+
+
+/**
+ * queue where cashiers put analytics data
+ * (n_clients waiting) for director
+ */
+fifo_tsqueue_t analytics_q;
 
 /**
  * if quit = 1 clients quits immediatly for supermarket closing

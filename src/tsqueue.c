@@ -117,3 +117,21 @@ void *fifo_tsqueue_pop(fifo_tsqueue_t *queue) {
 
     return ret;
 }
+
+int fifo_tsqueue_n_items(fifo_tsqueue_t *queue) {
+    int n_items;
+
+    if (pthread_mutex_lock(&queue->mutex) != 0) {
+        perror("tsqueue error during mutex locking");
+        return -1;
+    }
+
+    n_items = queue->n_elements;
+
+    if (pthread_mutex_unlock(&queue->mutex) != 0) {
+        perror("tsqueue error during mutex locking");
+        return -1;
+    }
+
+    return n_items;
+}

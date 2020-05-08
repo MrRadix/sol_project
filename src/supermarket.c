@@ -16,7 +16,7 @@
  */
 #define PRODTIME 50
 
-#define INFOINTERVAL 100
+#define ANALYTICS_INTERVAL 100
 
 int client_cashier_test();
 
@@ -31,6 +31,7 @@ int main(int argc, char const *argv[])
     d_args->n_client_group = E;
     d_args->n_max_product = P;
     d_args->product_time = PRODTIME;
+    d_args->analytics_t_intervall = ANALYTICS_INTERVAL;
     d_args->s1 = 2;
     d_args->s2 = 2;
 

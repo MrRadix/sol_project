@@ -10,6 +10,7 @@ struct director_args {
     int client_max_time;    // T
     int n_max_product;      // P
     int def_cashiers_number;
+    int analytics_t_intervall;
     int s1;
     int s2;
 };
@@ -27,6 +28,7 @@ struct cashiers_handler_args {
     int n_cashiers;
     int product_time;
     int def_cashiers_number;
+    int analytics_t_intervall;
     int s1;
     int s2;
 };
