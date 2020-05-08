@@ -3,11 +3,6 @@
 //#define ISEMPTY(queue) queue.tail == queue.head
 #define ISEMPTY(queue) queue.head == NULL
 
-struct analytics_args {
-    int intervall;
-    int id;
-};
-
 typedef struct _ts_queue_el {
     void *el;
     struct _ts_queue_el *next;

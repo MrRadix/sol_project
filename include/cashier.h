@@ -20,6 +20,11 @@ struct cashier_analytics {
     time_t timestamp;
 };
 
+struct analytics_args {
+    int intervall;
+    int id;
+};
+
 struct analytics_data {
     int n_clients;
     int id;
