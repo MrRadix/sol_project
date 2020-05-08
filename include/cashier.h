@@ -15,6 +15,11 @@ typedef struct _cashier_data {
 } cashier_data;
 */
 
+struct cashier_analytics {
+    int waiting_clients;
+    time_t timestamp;
+};
+
 struct cashier_args {
     int id;
     int time;

@@ -4,25 +4,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define K 2   // cashers number
-#define DEFKN 1
-#define C 10   // customers number
-#define E 1   // customers every group
+#define K 100   // cashers number
+#define DEFKN 5
+#define C 1000   // customers number
+#define E 999   // customers every group
 #define T 100 // max time for purchases in milliseconds
 #define P 40  // max number of product for each customer
-
-#define INITNK 1
-
-/**
- * time interval in milliseconds between two consecutives 
- * sendings of data from cashier to director
- */
-#define INFOINT 500
 
 /**
  * time in milliseconds to process every product
  */
 #define PRODTIME 50
+
+#define INFOINTERVAL 100
 
 int client_cashier_test();
 

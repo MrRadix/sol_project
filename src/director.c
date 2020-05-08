@@ -37,7 +37,6 @@ void director_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mtx) {
     }
 }
 
-//int c, int e, int k, int t, int p
 void *clients_handler(void *arg) {
     int c = ((struct clients_handler_args *)arg)->n_clients;
     int e = ((struct clients_handler_args *)arg)->n_clients_group;
@@ -178,7 +177,7 @@ void *director(void *arg) {
     /**
      * TODO: check if arguments from config file are valid
      * TODO: start cashiers
-     * TODO: start clients
+     * done TODO: start clients
      * TODO: get client information from cashiers
      * TODO: closing and opening cashes in base of s1 and s2 parameters
      * TODO: get cashier information when it closes

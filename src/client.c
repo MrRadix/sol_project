@@ -90,13 +90,6 @@ void *client(void *arg) {
     int response;
     int read_val;
 
-    /**
-    client_mutex_lock(&clients_inside_lock, arg);
-    clients_inside += 1;
-    fprintf(stderr, "increasing clients number to %d\n", clients_inside);
-    client_mutex_unlock(&clients_inside_lock, arg);
-    */
-
     client_mutex_lock(&opened_pipes_lock, arg);
 
     // waits if there are already 500 opened pipes
@@ -138,7 +131,7 @@ void *client(void *arg) {
         // choses a random open cash
         while (!cashier_open) {
             cashier_id = rand_r(&seed) % (max_cash);
-
+            
             client_mutex_lock(&state_lock[cashier_id], arg);
             cashier_open = state[cashier_id];
             client_mutex_unlock(&state_lock[cashier_id], arg);
@@ -152,13 +145,14 @@ void *client(void *arg) {
             pthread_exit((void*)EXIT_SUCCESS);
         }
 
-        if (int_fifo_tsqueue_push(&(cash_q[cashier_id]), ca_2_cl[1]) != 0) {
+        if (int_fifo_tsqueue_push(&cash_q[cashier_id], ca_2_cl[1]) != 0) {
             perror("client error during queue push operation");
             free(arg);
             close(ca_2_cl[0]);
             close(ca_2_cl[1]);
             pthread_exit((void*)EXIT_FAILURE);
         }
+        fprintf(stderr, "end push\n");
 
         if (quit){ 
             free(arg);

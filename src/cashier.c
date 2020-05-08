@@ -89,7 +89,7 @@ void *cashier(void *arg) {
          * waits for a client in queue
          */
         cashier_mutex_lock(&cash_q[id].mutex, id, arg);
-        fprintf(stderr, "chasier %d len queue: %d\n", id, cash_q[id].dim);
+        fprintf(stderr, "chasier %d len queue: \n", id);
 
         
         while (ISEMPTY(cash_q[id])) {
