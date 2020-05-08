@@ -5,9 +5,9 @@
 #include <stdlib.h>
 
 #define K 100   // cashers number
-#define DEFKN 10
-#define C 100   // customers number
-#define E 99   // customers every group
+#define DEFKN 1
+#define C 1   // customers number
+#define E 0   // customers every group
 #define T 100 // max time for purchases in milliseconds
 #define P 40  // max number of product for each customer
 

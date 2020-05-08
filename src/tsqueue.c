@@ -47,7 +47,6 @@ int fifo_tsqueue_push(fifo_tsqueue_t *queue, void *el, size_t size) {
     }
 
     if (ISEMPTY((*queue))) {
-        fprintf(stderr, "inside push function with queue empty\n");
         queue->head = (ts_queue_el *)malloc(sizeof(ts_queue_el));
         queue->tail = (ts_queue_el *)malloc(sizeof(ts_queue_el));
 
@@ -58,8 +57,6 @@ int fifo_tsqueue_push(fifo_tsqueue_t *queue, void *el, size_t size) {
         queue->tail = queue->head;
 
     } else {
-        fprintf(stderr, "inside push function with queue not empty\n");
-
         queue->tail->next = (ts_queue_el *)malloc(sizeof(ts_queue_el));
         queue->tail = queue->tail->next;
 

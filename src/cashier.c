@@ -67,6 +67,11 @@ void *analytics(void *arg) {
 
         data = (struct analytics_data *)malloc(sizeof(struct analytics_data));
         data->id = id;
+        data->n_clients = fifo_tsqueue_n_items(&cash_q[id]);
+
+        fifo_tsqueue_push(&analytics_q, (void*)data, sizeof(data));
+
+        fprintf(stderr, "analytics queue with %d elements\n", fifo_tsqueue_n_items(&analytics_q));
     }
 
 }
@@ -95,9 +100,15 @@ void *cashier(void *arg) {
     int is_empty;
     int cpipe;
     client_data data;
+    pthread_t analytics_thread;
+    
+    struct analytics_args *a_args = (struct analytics_args*)malloc(sizeof(struct analytics_args));
+    a_args->id = id;
+    a_args->intervall = analytics_time;
 
+    pthread_create(&analytics_thread, NULL, analytics, (void*)a_args);
     /**
-     * TODO: start analytics thread
+     * done TODO: start analytics thread
      */
 
     /**
@@ -112,8 +123,6 @@ void *cashier(void *arg) {
          * waits for a client in queue
          */
         cashier_mutex_lock(&cash_q[id].mutex, id, arg);
-        fprintf(stderr, "chasier %d len queue: \n", id);
-
         
         while (ISEMPTY(cash_q[id])) {
             fprintf(stderr, "cashier %d waiting for someone in queue\n", id);
