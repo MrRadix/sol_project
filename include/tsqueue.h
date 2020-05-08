@@ -1,7 +1,9 @@
 #include <pthread.h>
-#define ISFULL(queue) queue.tail+1 == queue.dim
-#define ISEMPTY(queue) queue.tail == queue.head
+//#define ISFULL(queue) queue.tail+1 == queue.dim
+//#define ISEMPTY(queue) queue.tail == queue.head
+#define ISEMPTY(queue) queue.head == NULL
 
+/**
 typedef struct _int_fifo_tsqueue_t {
     int *buff;
     int dim;
@@ -10,6 +12,19 @@ typedef struct _int_fifo_tsqueue_t {
     pthread_mutex_t mutex;
     pthread_cond_t empty;
 } int_fifo_tsqueue_t;
+*/
+typedef struct _ts_queue_el {
+    int el;
+    struct _ts_queue_el *next;
+} ts_queue_el;
+
+typedef struct _int_fifo_tsqueue_t {
+    ts_queue_el *head;
+    ts_queue_el *tail;
+    pthread_mutex_t mutex;
+    pthread_cond_t empty;
+} int_fifo_tsqueue_t;
+
 
 /**
  * params:
