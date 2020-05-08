@@ -73,15 +73,15 @@ void *cashier(void *arg) {
     int cpipe;
     client_data data;
 
-    fprintf(stderr, "started cashier %d\n", id);
-
     /**
      * TODO: start analytics thread
      */
 
     /**
      * TODO: send to director client data
-     */
+     */ 
+
+    fprintf(stderr, "lkasjldkjaslkajsd\n");
 
     while (open) {
 
@@ -89,7 +89,11 @@ void *cashier(void *arg) {
          * waits for a client in queue
          */
         cashier_mutex_lock(&cash_q[id].mutex, id, arg);
+        fprintf(stderr, "chasier %d len queue: %d\n", id, cash_q[id].dim);
+
+        
         while (ISEMPTY(cash_q[id])) {
+            fprintf(stderr, "cashier %d waiting for someone in queue\n", id);
             cashier_mutex_lock(&state_lock[id], id, arg);
             open = state[id];
             cashier_mutex_unlock(&state_lock[id], id, arg);
@@ -126,8 +130,6 @@ void *cashier(void *arg) {
         while (buff_is_empty[id]) {
             cashier_cond_wait(&buff_empty[id], &buff_lock[id], id, arg);
         }
-
-        fprintf(stderr, "cashier %d receiving data from client %d\n", id, buff[id].id);
 
         // sleeps (simulates cshier products scanning period)
         pass_products(time+prod_time*buff[id].n_products);
@@ -216,7 +218,7 @@ void cash_buff_init(client_data **buff, int dim) {
     *buff = (client_data *)malloc(dim*sizeof(client_data));
 }
 
-void cashiers_init(int n_cashiers, int n_clients) {
+void cashier_thread_init(int n_cashiers, int n_clients) {
     cash_queue_init(&cash_q, n_cashiers, n_clients);
     cash_lock_init(&state_lock, n_cashiers);
     cash_lock_init(&buff_lock, n_cashiers);
@@ -224,6 +226,4 @@ void cashiers_init(int n_cashiers, int n_clients) {
     cash_state_init(&buff_is_empty, n_cashiers, 1);
     cash_state_init(&state, n_cashiers, 0);
     cash_buff_init(&buff, n_cashiers);
-
-    quit = 0;
 }

@@ -1,5 +1,5 @@
 #include <pthread.h>
-#define ISFULL(queue) (queue.tail+1) % queue.dim == queue.head
+#define ISFULL(queue) queue.tail+1 == queue.dim
 #define ISEMPTY(queue) queue.tail == queue.head
 
 typedef struct _int_fifo_tsqueue_t {

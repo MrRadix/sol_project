@@ -65,6 +65,12 @@ int_fifo_tsqueue_t *cash_q;
  */
 volatile sig_atomic_t quit;
 
+/**
+ * if closing = 1 no more clients enters 
+ * and will be served remainig clients inside supermarket
+ * else if closing = 0 supermarket works normally
+ */
+volatile sig_atomic_t closing;
 
 void *cashier(void *arg);
-void cashiers_init(int n_cashiers, int n_clients);
+void cashier_thread_init(int n_cashiers, int n_clients);
