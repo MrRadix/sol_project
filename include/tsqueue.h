@@ -25,21 +25,6 @@ typedef struct _fifo_tsqueue_t {
 int fifo_tsqueue_init(fifo_tsqueue_t *queue);
 
 /**
- * effect: doubles the queue size
- */
-int fifo_tsqueue_realloc(fifo_tsqueue_t *queue);
-
-/**
- * effects: frees queue allocation in heap
- */
-int fifo_tsqueue_free(fifo_tsqueue_t *queue);
-
-/**
- * returns 1 if queue is full 0 otherwise
- */
-int fifo_tsqueue_isfull(fifo_tsqueue_t queue);
-
-/**
  * returns 1 if queue is empty 0 otherwise
  */
 int fifo_tsqueue_isempty(fifo_tsqueue_t queue);
