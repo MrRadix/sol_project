@@ -67,13 +67,13 @@ int fifo_tsqueue_push(fifo_tsqueue_t *queue, void *el, size_t size) {
 
     queue->n_elements += 1;
 
-    if (pthread_cond_signal(&queue->empty) != 0) {
-        perror("tsqueue error during signaling");
+    if (pthread_mutex_unlock(&queue->mutex) != 0) {
+        perror("tsqueue error during mutex unlocking");
         return -1;
     }
 
-    if (pthread_mutex_unlock(&queue->mutex) != 0) {
-        perror("tsqueue error during mutex unlocking");
+    if (pthread_cond_signal(&queue->empty) != 0) {
+        perror("tsqueue error during signaling");
         return -1;
     }
 
