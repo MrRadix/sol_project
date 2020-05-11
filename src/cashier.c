@@ -53,13 +53,12 @@ void *analytics(void *arg) {
 
     struct timespec *res = (struct timespec *)malloc(sizeof(struct timespec));
     struct timespec *rem = (struct timespec *)malloc(sizeof(struct timespec));
+    res->tv_sec = 0;
+    res->tv_nsec = intervall * 1000000;
 
     struct analytics_data *data;
 
     while (!quit && !closing) {
-
-        res->tv_sec = 0;
-        res->tv_nsec = intervall;
 
         if (nanosleep(res, rem) == -1) {
             nanosleep(rem, NULL);
@@ -70,19 +69,25 @@ void *analytics(void *arg) {
         data->n_clients = fifo_tsqueue_n_items(&cash_q[id]);
 
         fifo_tsqueue_push(&analytics_q, (void*)data, sizeof(data));
-
-        fprintf(stderr, "analytics queue with %d elements\n", fifo_tsqueue_n_items(&analytics_q));
+        
+        //fprintf(stderr, "analytics queue with %d elements\n", fifo_tsqueue_n_items(&analytics_q));
     }
 
 }
 
-void pass_products(long nsec) {
+void pass_products(long msec, int id) {
     struct timespec *res = (struct timespec *)malloc(sizeof(struct timespec));
     struct timespec *rem = (struct timespec *)malloc(sizeof(struct timespec));
+    float nsec = msec*1000000;
+    int sec = 0;
 
-    res->tv_sec = 0;
+    nsec = nsec/1000000000;
+    sec = (int)nsec;
+    nsec = (nsec-sec)*1000000000;
+
+    res->tv_sec = sec;
     res->tv_nsec = nsec;
-
+    
     if (nanosleep(res, rem) == -1) {
         nanosleep(rem, NULL);
     }
@@ -105,6 +110,7 @@ void *cashier(void *arg) {
     struct analytics_args *a_args = (struct analytics_args*)malloc(sizeof(struct analytics_args));
     a_args->id = id;
     a_args->intervall = analytics_time;
+    void *p;
 
     pthread_create(&analytics_thread, NULL, analytics, (void*)a_args);
     /**
@@ -115,7 +121,7 @@ void *cashier(void *arg) {
      * TODO: send to director client data
      */ 
 
-    fprintf(stderr, "lkasjldkjaslkajsd\n");
+    fprintf(stderr, "------------opening cashier: %d-------------\n", id);
 
     while (open) {
 
@@ -145,14 +151,19 @@ void *cashier(void *arg) {
             break;
         }
 
-        if ((cpipe = *(int*)fifo_tsqueue_pop(&cash_q[id])) < 0) {
+        fprintf(stderr, "=======> cashier %d pooping pipe\n", id);
+        p = fifo_tsqueue_pop(&cash_q[id]);
+        if ((cpipe = *(int*)p) < 0) {
             perror("cashier error during pop from queue");
             free(arg);
             pthread_exit((void*)EXIT_FAILURE);
         }
+        free(p);
 
         int message = NEXT;
         write(cpipe, &message, sizeof(int));
+
+        fprintf(stderr, "=========> cashier %d written NEXT\n", id);
 
 
         /**
@@ -160,23 +171,30 @@ void *cashier(void *arg) {
          */
         cashier_mutex_lock(&buff_lock[id], id, arg);
         while (buff_is_empty[id]) {
+            fprintf(stderr, "=========> cashier %d buff is empty\n", id);
             cashier_cond_wait(&buff_empty[id], &buff_lock[id], id, arg);
+            fprintf(stderr, "=========> cashier %d waked up\n", id);
         }
 
+        fprintf(stderr, "=========> cashier %d sleeping...\n", id);
         // sleeps (simulates cshier products scanning period)
-        pass_products(time+prod_time*buff[id].n_products);
+        pass_products(time+prod_time*buff[id].n_products, id);
 
+        fprintf(stderr, "=========> cashier %d finished sleeping\n", id);
+
+        /*
         data.id = buff[id].id;
         data.n_products = buff[id].n_products;
         data.q_time = buff[id].q_time;
         data.q_viewed = buff[id].q_viewed;
         data.sm_time = buff[id].sm_time;
+        */
 
         buff_is_empty[id] = 1;
 
-        cashier_mutex_unlock(&buff_lock[id], id, arg);
-
         fprintf(stderr, "cashier %d received all data from client %d\n", id, buff[id].id);
+
+        cashier_mutex_unlock(&buff_lock[id], id, arg);
 
         cashier_mutex_lock(&state_lock[id], id, arg);
         open = state[id];
@@ -189,11 +207,13 @@ void *cashier(void *arg) {
     is_empty = fifo_tsqueue_isempty(cash_q[id]);
     while(!is_empty && is_empty >= 0) {
         
-        if ((cpipe = *(int*)fifo_tsqueue_pop(&cash_q[id]) < 0)) {
+        p = fifo_tsqueue_pop(&cash_q[id]);
+        if ((cpipe = *(int*)p) < 0) {
             perror("cashier error during pop from queue");
             free(arg);
             pthread_exit((void*)EXIT_FAILURE);
         }
+        free(p);
 
         write(cpipe, CLOSING, sizeof(int));
 
@@ -205,6 +225,7 @@ void *cashier(void *arg) {
         pthread_exit((void*)EXIT_FAILURE);
     }
 
+    fprintf(stderr, "------------closing cashier: %d-------------\n", id);
     free(arg);
 
     pthread_exit((void*)EXIT_SUCCESS);
@@ -255,7 +276,7 @@ void cashier_thread_init(int n_cashiers, int n_clients) {
     cash_lock_init(&state_lock, n_cashiers);
     cash_lock_init(&buff_lock, n_cashiers);
     cash_cond_init(&buff_empty, n_cashiers);
-    cash_state_init(&buff_is_empty, n_cashiers, 1);
+    cash_state_init(&buff_is_empty, n_cashiers, 0);
     cash_state_init(&state, n_cashiers, 0);
     cash_buff_init(&buff, n_cashiers);
 

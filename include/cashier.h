@@ -15,11 +15,6 @@ typedef struct _cashier_data {
 } cashier_data;
 */
 
-struct cashier_analytics {
-    int waiting_clients;
-    time_t timestamp;
-};
-
 struct analytics_args {
     int intervall;
     int id;
