@@ -287,6 +287,7 @@ void *director(void *arg) {
      * TODO: check if arguments from config file are valid
      * TODO: start cashiers
      * done TODO: start clients
+     * TODO: hanlde clients with 0 products
      * TODO: get client information from cashiers
      * TODO: closing and opening cashes in base of s1 and s2 parameters
      * TODO: get cashier information when it closes
