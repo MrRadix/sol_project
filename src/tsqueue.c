@@ -29,7 +29,7 @@ int fifo_tsqueue_isempty(fifo_tsqueue_t queue) {
         return -1;
     }
     
-    int ret = ISEMPTY(queue);
+    int ret = queue.head == NULL;
     
     if (pthread_mutex_unlock(&queue.mutex) != 0) {
         perror("tsqueue error during mutex unlocking");
@@ -84,18 +84,16 @@ void *fifo_tsqueue_pop(fifo_tsqueue_t *queue) {
     void *ret;
     ts_queue_el *tmp;
 
-    if (pthread_mutex_lock(&queue->mutex) != 0) {
-        perror("tsqueue error during mutex locking");
-        return (void*)-1;
+    fprintf(stderr, "inside pop function %d\n", (queue->head == NULL));
+    // checks if queue is empty
+    if (fifo_tsqueue_isempty(*queue)) {
+        fprintf(stderr, "inside pop function if %d\n", (queue->head == NULL));
+
+        return NULL;
     }
 
-    // checks if queue is empty
-    if (ISEMPTY((*queue))) {
-        if (pthread_mutex_unlock(&queue->mutex) != 0) {
-            perror("tsqueue error during mutex unlocking");
-            return (void*)-1;
-        }
-
+    if (pthread_mutex_lock(&queue->mutex) != 0) {
+        perror("tsqueue error during mutex locking");
         return (void*)-1;
     }
 
@@ -115,17 +113,17 @@ void *fifo_tsqueue_pop(fifo_tsqueue_t *queue) {
     return ret;
 }
 
-int fifo_tsqueue_n_items(fifo_tsqueue_t *queue) {
+int fifo_tsqueue_n_items(fifo_tsqueue_t queue) {
     int n_items;
 
-    if (pthread_mutex_lock(&queue->mutex) != 0) {
+    if (pthread_mutex_lock(&queue.mutex) != 0) {
         perror("tsqueue error during mutex locking");
         return -1;
     }
 
-    n_items = queue->n_elements;
+    n_items = queue.n_elements;
 
-    if (pthread_mutex_unlock(&queue->mutex) != 0) {
+    if (pthread_mutex_unlock(&queue.mutex) != 0) {
         perror("tsqueue error during mutex locking");
         return -1;
     }

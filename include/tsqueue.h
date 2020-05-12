@@ -1,6 +1,4 @@
 #include <pthread.h>
-//#define ISFULL(queue) queue.tail+1 == queue.dim
-//#define ISEMPTY(queue) queue.tail == queue.head
 #define ISEMPTY(queue) queue.head == NULL
 
 typedef struct _ts_queue_el {
@@ -46,4 +44,4 @@ void *fifo_tsqueue_pop(fifo_tsqueue_t *queue);
 /**
  * effects: returns number of element in queue
  */
-int fifo_tsqueue_n_items(fifo_tsqueue_t *queue);
+int fifo_tsqueue_n_items(fifo_tsqueue_t queue);

@@ -66,7 +66,7 @@ void *analytics(void *arg) {
 
         data = (struct analytics_data *)malloc(sizeof(struct analytics_data));
         data->id = id;
-        data->n_clients = fifo_tsqueue_n_items(&cash_q[id]);
+        data->n_clients = fifo_tsqueue_n_items(cash_q[id]);
 
         fifo_tsqueue_push(&analytics_q, (void*)data, sizeof(data));
         
@@ -110,7 +110,8 @@ void *cashier(void *arg) {
     struct analytics_args *a_args = (struct analytics_args*)malloc(sizeof(struct analytics_args));
     a_args->id = id;
     a_args->intervall = analytics_time;
-    void *p;
+    void *p = NULL;
+    int message;
 
     pthread_create(&analytics_thread, NULL, analytics, (void*)a_args);
     /**
@@ -121,7 +122,7 @@ void *cashier(void *arg) {
      * TODO: send to director client data
      */ 
 
-    fprintf(stderr, "------------opening cashier: %d-------------\n", id);
+    //fprintf(stderr, "------------opening cashier: %d-------------\n", id);
 
     while (open) {
 
@@ -148,11 +149,19 @@ void *cashier(void *arg) {
         cashier_mutex_unlock(&cash_q[id].mutex, id, arg);
 
         if (!open) {  
-            break;
+            continue;
         }
 
+        fprintf(stderr, "cahsier %d queue is empty outside while: %d\n", id, ISEMPTY(cash_q[id]));
         fprintf(stderr, "=======> cashier %d pooping pipe\n", id);
+        //fifo_tsqueue_print(cash_q[id]);
         p = fifo_tsqueue_pop(&cash_q[id]);
+
+        /**
+         * TODO: solve seg fault here
+         */
+        fprintf(stderr, "cashier %d poped %p\n", id, p);
+        fprintf(stderr, "cahsier %d queue is empty after pop: %d\n", id, ISEMPTY(cash_q[id]));
         if ((cpipe = *(int*)p) < 0) {
             perror("cashier error during pop from queue");
             free(arg);
@@ -160,10 +169,10 @@ void *cashier(void *arg) {
         }
         free(p);
 
-        int message = NEXT;
+        message = NEXT;
         write(cpipe, &message, sizeof(int));
 
-        fprintf(stderr, "=========> cashier %d written NEXT\n", id);
+        //fprintf(stderr, "=========> cashier %d written NEXT\n", id);
 
 
         /**
@@ -182,13 +191,12 @@ void *cashier(void *arg) {
 
         fprintf(stderr, "=========> cashier %d finished sleeping\n", id);
 
-        /*
+        
         data.id = buff[id].id;
         data.n_products = buff[id].n_products;
         data.q_time = buff[id].q_time;
         data.q_viewed = buff[id].q_viewed;
         data.sm_time = buff[id].sm_time;
-        */
 
         buff_is_empty[id] = 1;
 
@@ -207,6 +215,8 @@ void *cashier(void *arg) {
     is_empty = fifo_tsqueue_isempty(cash_q[id]);
     while(!is_empty && is_empty >= 0) {
         
+        fprintf(stderr, "cahsier %d sending closing message\n", id);
+
         p = fifo_tsqueue_pop(&cash_q[id]);
         if ((cpipe = *(int*)p) < 0) {
             perror("cashier error during pop from queue");
@@ -214,8 +224,9 @@ void *cashier(void *arg) {
             pthread_exit((void*)EXIT_FAILURE);
         }
         free(p);
-
-        write(cpipe, CLOSING, sizeof(int));
+        
+        message = CLOSING;
+        write(cpipe, &message, sizeof(int));
 
         is_empty = fifo_tsqueue_isempty(cash_q[id]);
     }
@@ -225,7 +236,7 @@ void *cashier(void *arg) {
         pthread_exit((void*)EXIT_FAILURE);
     }
 
-    fprintf(stderr, "------------closing cashier: %d-------------\n", id);
+    //fprintf(stderr, "------------closing cashier: %d-------------\n", id);
     free(arg);
 
     pthread_exit((void*)EXIT_SUCCESS);

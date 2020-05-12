@@ -50,11 +50,17 @@ void client_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex, void *p) {
     }
 }
 
-void purchase(int nsec) {
+void purchase(int msec) {
     struct timespec *res = (struct timespec *)malloc(sizeof(struct timespec));
     struct timespec *rem = (struct timespec *)malloc(sizeof(struct timespec));
+    float nsec = msec*1000000;
+    int sec = 0;
 
-    res->tv_sec = 0;
+    nsec = nsec/1000000000;
+    sec = (int)nsec;
+    nsec = (nsec-sec)*1000000000;
+
+    res->tv_sec = sec;
     res->tv_nsec = nsec;
 
     // purchasing products...
@@ -90,6 +96,8 @@ void *client(void *arg) {
     int response;
     int read_val;
 
+    //fprintf(stderr, "started client %d\n", id);
+
     client_mutex_lock(&opened_pipes_lock, arg);
 
     // waits if there are already 500 opened pipes
@@ -112,6 +120,8 @@ void *client(void *arg) {
         pthread_exit((void*)EXIT_SUCCESS);
     }
 
+    //fprintf(stderr, "client %d starting purchases\n", id);
+
     // sleeps for p_time ms (simulates client purchase period)
     purchase(p_time);
 
@@ -121,6 +131,8 @@ void *client(void *arg) {
         close(ca_2_cl[1]);
         pthread_exit((void*)EXIT_SUCCESS);
     }
+
+    //fprintf(stderr, "client %d finished purchases\n", id);
 
     /**
      * TODO: client with 0 product requests exit to director
@@ -145,6 +157,7 @@ void *client(void *arg) {
             pthread_exit((void*)EXIT_SUCCESS);
         }
 
+        fprintf(stderr, "client %d pushing in queue pfd: %d\n", id, ca_2_cl[1]);
         if (fifo_tsqueue_push(&cash_q[cashier_id], (void*)&ca_2_cl[1], sizeof(ca_2_cl[1])) != 0) {
             perror("client error during queue push operation");
             free(arg);
@@ -152,7 +165,6 @@ void *client(void *arg) {
             close(ca_2_cl[1]);
             pthread_exit((void*)EXIT_FAILURE);
         }
-        fprintf(stderr, "end push\n");
 
         if (quit){ 
             free(arg);
@@ -164,31 +176,11 @@ void *client(void *arg) {
         queues_viewed++;
 
         // waits for his turn
-        while(1) {
-            read_val = read(ca_2_cl[0], &response, sizeof(int));
-
-
-            /**
-             * if read was blocked by a signal restart waiting
-             * for something to read 
-             * else quit
-             */
-            if (errno != 0) {
-                if (read_val != EINTR) {
-                    perror("error during read");
-                    free(arg);
-                    close(ca_2_cl[0]);
-                    close(ca_2_cl[1]);
-                    pthread_exit((void*)EXIT_FAILURE);
-                } else {
-                    continue;
-                }
-            /**
-             * if there was no error exit from loop
-             */
-            } else {
-                break;
-            }
+        read_val = read(ca_2_cl[0], &response, sizeof(int));
+        if (read_val < 0) {
+            perror("error during reading");
+            free(arg);
+            pthread_exit((void*)EXIT_FAILURE);
         }
 
         /**
@@ -197,7 +189,10 @@ void *client(void *arg) {
          */
         if (response == CLOSING) {
             cashier_open = 0;
+            fprintf(stderr, "client %d received closing message from cashier %d\n", id, cashier_id);
             continue;
+        } else {
+            fprintf(stderr, "client %d received next message from cashier %d\n", id, cashier_id);
         }
 
         exit_queue = 1;
@@ -226,7 +221,7 @@ void *client(void *arg) {
 
     client_mutex_lock(&clients_inside_lock, arg);
     clients_inside--;
-    pthread_cond_broadcast(&max_clients_inside);
+    client_cond_signal(&max_clients_inside, arg);
     fprintf(stderr, "decreasing clients number to %d\n", clients_inside);
     client_mutex_unlock(&clients_inside_lock, arg);
 
