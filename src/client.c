@@ -72,6 +72,28 @@ void purchase(int msec) {
     free(rem);
 }
 
+void client_quit(int cpipe[2], void *arg, int id) {
+    
+    client_mutex_lock(&clients_inside_lock, arg);
+    clients_inside--;
+    client_cond_signal(&max_clients_inside, arg);
+    fprintf(stderr, "decreasing clients number to %d\n", clients_inside);
+    client_mutex_unlock(&clients_inside_lock, arg);
+
+    free(arg);
+    close(cpipe[0]);
+    close(cpipe[1]);
+
+    client_mutex_lock(&opened_pipes_lock, arg);
+    opened_pipes--;
+
+    client_cond_signal(&max_opened_pipes, arg);
+    client_mutex_unlock(&opened_pipes_lock, arg);
+    fprintf(stderr, "client %d finished\n", id);
+    pthread_exit((void*)EXIT_SUCCESS);
+
+} 
+
 void *client(void *arg) {
     time_t enter_time   = time(NULL);
 
@@ -126,10 +148,7 @@ void *client(void *arg) {
     purchase(p_time);
 
     if (quit){ 
-        free(arg);
-        close(ca_2_cl[0]);
-        close(ca_2_cl[1]);
-        pthread_exit((void*)EXIT_SUCCESS);
+        client_quit(ca_2_cl, arg, id);
     }
 
     //fprintf(stderr, "client %d finished purchases\n", id);
@@ -139,6 +158,10 @@ void *client(void *arg) {
      */ 
     enter_queue_time = time(NULL);
     while (!exit_queue) {
+
+        if (quit){ 
+            client_quit(ca_2_cl, arg, id);
+        }
 
         // choses a random open cash
         while (!cashier_open) {
@@ -151,10 +174,7 @@ void *client(void *arg) {
         fprintf(stderr, "client %d entered in queue of cashier %d\n", id, cashier_id);
 
         if (quit){ 
-            free(arg);
-            close(ca_2_cl[0]);
-            close(ca_2_cl[1]);
-            pthread_exit((void*)EXIT_SUCCESS);
+            client_quit(ca_2_cl, arg, id);
         }
 
         fprintf(stderr, "client %d pushing in queue pfd: %d\n", id, ca_2_cl[1]);
@@ -164,13 +184,6 @@ void *client(void *arg) {
             close(ca_2_cl[0]);
             close(ca_2_cl[1]);
             pthread_exit((void*)EXIT_FAILURE);
-        }
-
-        if (quit){ 
-            free(arg);
-            close(ca_2_cl[0]);
-            close(ca_2_cl[1]);
-            pthread_exit((void*)EXIT_SUCCESS);
         }
 
         queues_viewed++;
@@ -219,23 +232,7 @@ void *client(void *arg) {
     client_cond_signal(&buff_empty[cashier_id], arg);
     client_mutex_unlock(&buff_lock[cashier_id], arg);
 
-    client_mutex_lock(&clients_inside_lock, arg);
-    clients_inside--;
-    client_cond_signal(&max_clients_inside, arg);
-    fprintf(stderr, "decreasing clients number to %d\n", clients_inside);
-    client_mutex_unlock(&clients_inside_lock, arg);
-
-    free(arg);
-    close(ca_2_cl[0]);
-    close(ca_2_cl[1]);
-
-    client_mutex_lock(&opened_pipes_lock, arg);
-    opened_pipes--;
-
-    client_cond_signal(&max_opened_pipes, arg);
-    client_mutex_unlock(&opened_pipes_lock, arg);
-    fprintf(stderr, "client %d finished\n", id);
-    pthread_exit((void*)EXIT_SUCCESS);
+    client_quit(ca_2_cl, arg, id);
 }
 
 void client_thread_init() {
