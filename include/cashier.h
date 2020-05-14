@@ -27,7 +27,7 @@ struct analytics_data {
 
 struct cashier_args {
     int id;
-    int time;
+    int time_per_client;
     int analytics_time;
     int prod_time;
 };

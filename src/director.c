@@ -56,10 +56,10 @@ void *clients_handler(void *arg) {
         while (clients_inside >= c-e) {
             fprintf(stderr, "inside while: %d\n", clients_inside);
             director_cond_wait(&max_clients_inside, &clients_inside_lock);
-            fprintf(stderr, "waked up director by client\n");
+            //fprintf(stderr, "waked up director by client\n");
         }
 
-        fprintf(stderr, "effective clients: %d\n", clients_inside);
+        //fprintf(stderr, "effective clients: %d\n", clients_inside);
 
         for (int i = clients_inside; i < c; i++) {
             args = (struct client_args *)malloc(sizeof(struct client_args));
@@ -71,14 +71,14 @@ void *clients_handler(void *arg) {
             pthread_create(&client_thread, NULL, client, (void*)args);
             clients_inside++;
 
-            fprintf(stderr, "added client %d\n", id);
+            //fprintf(stderr, "added client %d\n", id);
             id++;
         }
 
         director_mutex_unlock(&clients_inside_lock);
     }
 
-    fprintf(stderr, "end of client handler\n");
+    //fprintf(stderr, "end of client handler\n");
 
     pthread_exit((void*)EXIT_SUCCESS);
 }
@@ -132,7 +132,7 @@ void *cashiers_handler(void *arg) {
 
         ca_args = (struct cashier_args*)malloc(sizeof(struct cashier_args));
         ca_args->id = i;
-        ca_args->time = (rand_r(&seed) % (MAX_KTIME - MIN_KTIME + 1)) + MIN_KTIME;
+        ca_args->time_per_client = (rand_r(&seed) % (MAX_KTIME - MIN_KTIME + 1)) + MIN_KTIME;
         ca_args->analytics_time = analytics_time;
         ca_args->prod_time = prod_time;
 
@@ -145,13 +145,18 @@ void *cashiers_handler(void *arg) {
      */
     while (!quit) {
 
-        director_mutex_lock(&analytics_q.mutex);
-        while(ISEMPTY(analytics_q))
-            director_cond_wait(&analytics_q.empty, &analytics_q.mutex);
-        pthread_mutex_unlock(&analytics_q.mutex);
+        director_mutex_lock(analytics_q.mutex);
+        while(ISEMPTY(analytics_q)) {
+            fprintf(stderr, "analytics_q is empty\n");
+            director_cond_wait(analytics_q.empty, analytics_q.mutex);
+            fprintf(stderr, "director waked up by cashier\n");
+        }
+        director_mutex_unlock(analytics_q.mutex);
         
         data = (struct analytics_data *)malloc(sizeof(struct analytics_data));
         data = (struct analytics_data *)fifo_tsqueue_pop(&analytics_q);
+
+        fprintf(stderr, "aaaaaaaaaaaaaaaaaaaaaaaaaaa director received data from cashier %d n clients %d\n", data->id, data->n_clients);
 
         
         if (data->n_clients <= 1) {
@@ -214,7 +219,7 @@ void *cashiers_handler(void *arg) {
             
             ca_args = (struct cashier_args*)malloc(sizeof(struct cashier_args));
             ca_args->id = i;
-            ca_args->time = (rand_r(&seed) % (MAX_KTIME - MIN_KTIME + 1)) + MIN_KTIME;
+            ca_args->time_per_client = (rand_r(&seed) % (MAX_KTIME - MIN_KTIME + 1)) + MIN_KTIME;
             ca_args->analytics_time = analytics_time;
             ca_args->prod_time = prod_time;
 
