@@ -12,12 +12,13 @@ INCLUDES	= -I $(INCDIR)
 LDFLAGS		= -L $(LIBDIR)
 LIBS 		= -ltsqueue -lpthread
 
+TARGET = $(BINDIR)/supermarket
+
 .PHONY: all clean test2
 
-#$(BINDIR)/supermarket : $(SRCDIR)/supermarket.c $(SRCDIR)/cashier.c $(SRCDIR)/client.c $(LIBDIR)/libtsqueue.a
-#	$(CC) $(CFLAGS) $(THREADS) $(LDFLAGS) $(LIBS) $(INCLUDES) -g $^ -o $@
+all: $(TARGET)
 
-$(BINDIR)/supermarket : $(BUILDDIR)/supermarket.o $(BUILDDIR)/client.o $(BUILDDIR)/cashier.o $(BUILDDIR)/director.o $(LIBDIR)/libtsqueue.a
+$(TARGET) : $(BUILDDIR)/supermarket.o $(BUILDDIR)/client.o $(BUILDDIR)/cashier.o $(BUILDDIR)/director.o $(LIBDIR)/libtsqueue.a
 	$(CC) $(CFLAGS) $(THREADS) $(INCLUDES) $(LDFLAGS) $(LIBS) -g $^ -o $@
 
 $(BUILDDIR)/supermarket.o : $(SRCDIR)/supermarket.c

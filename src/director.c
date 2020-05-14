@@ -96,7 +96,6 @@ static int cashiers_with_one_c(int *cashiers, int n) {
 // int k, int c, int prod_time, int def_number, int s1, int s2
 void *cashiers_handler(void *arg) {
     int k               = ((struct cashiers_handler_args *)arg)->n_cashiers;
-    int c               = ((struct cashiers_handler_args *)arg)->n_clients;
     int prod_time       = ((struct cashiers_handler_args *)arg)->product_time;
     int def_number      = ((struct cashiers_handler_args *)arg)->def_cashiers_number;
     int analytics_time  = ((struct cashiers_handler_args *)arg)->analytics_t_intervall;
@@ -120,7 +119,6 @@ void *cashiers_handler(void *arg) {
     unsigned int seed = time(NULL) ^ s1 ^ s2;
     
     int cashier_open = 0;
-    int cashier_id = 0;
     int i;
 
     for (i = 0; i<def_number; i++) {

@@ -1,9 +1,11 @@
 #include "cashier.h"
 #include <stdlib.h>
 #include <time.h>
+#include <sys/time.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <errno.h>
+
 
 void cashier_mutex_lock(pthread_mutex_t *mtx, int id, void *p) {
     int err;
@@ -45,42 +47,6 @@ void cashier_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mtx, int id, void 
         pthread_cond_destroy(&buff_empty[id]);
         pthread_exit((void*)EXIT_FAILURE);
     }
-}
-
-void *analytics(void *arg) {
-    int msec   = ((struct analytics_args*)arg)->intervall;
-    int id     = ((struct analytics_args*)arg)->id;
-
-    struct timespec *res = (struct timespec *)malloc(sizeof(struct timespec));
-    struct timespec *rem = (struct timespec *)malloc(sizeof(struct timespec));
-    float nsec = msec*1000000;
-    int sec = 0;
-
-    nsec = nsec/1000000000;
-    sec = (int)nsec;
-    nsec = (nsec-sec)*1000000000;
-
-    struct analytics_data *data;
-
-    while (!quit && !closing) {
-        
-        res->tv_sec = sec;
-        res->tv_nsec = (long)nsec;
-
-        if (nanosleep(res, rem) == -1) {
-            nanosleep(rem, NULL);
-        }
-
-        data = (struct analytics_data *)malloc(sizeof(struct analytics_data));
-        data->id = id;
-        data->n_clients = fifo_tsqueue_n_items(cash_q[id]);
-
-        fifo_tsqueue_push(&analytics_q, (void*)data, sizeof(data));
-        free(data);
-        
-        fprintf(stderr, "analytics queue with %d elements\n", fifo_tsqueue_n_items(analytics_q));
-    }
-
 }
 
 void send_analytics(int id, int msec) {
@@ -138,16 +104,16 @@ void pass_products(long msec, int id) {
 } 
 
 void *cashier(void *arg) {
-    int id                  = ((struct cashier_args *)arg)->id;
+    int id                 = ((struct cashier_args *)arg)->id;
     int time_per_client    = ((struct cashier_args *)arg)->time_per_client;
-    int analytics_time      = ((struct cashier_args *)arg)->analytics_time;
-    int prod_time           = ((struct cashier_args *)arg)->prod_time;
-    int open                = 1;
+    long analytics_time    = ((struct cashier_args *)arg)->analytics_time;
+    int prod_time          = ((struct cashier_args *)arg)->prod_time;
+    int open;
     int is_empty;
     int cpipe;
-    time_t time_spent_client = 0;
     client_data data;
-    pthread_t analytics_thread;
+    long time_spent_client;
+    struct timeval start, stop, result;
     
     struct analytics_args *a_args = (struct analytics_args*)malloc(sizeof(struct analytics_args));
     a_args->id = id;
@@ -155,22 +121,16 @@ void *cashier(void *arg) {
     void *p = NULL;
     int message;
 
-    //pthread_create(&analytics_thread, NULL, analytics, (void*)a_args);
-    /**
-     * done TODO: start analytics thread
-     */
-
-    /**
-     * TODO: send to director client data
-     */ 
-
     //fprintf(stderr, "------------opening cashier: %d-------------\n", id);
 
-    while (open) {
+    cashier_mutex_lock(&state_lock[id], id, arg);
+    open = state[id];
+    cashier_mutex_unlock(&state_lock[id], id, arg);
 
-        cashier_mutex_lock(&state_lock[id], id, arg);
-        open = state[id];
-        cashier_mutex_unlock(&state_lock[id], id, arg);
+    while (open) {
+        
+        gettimeofday(&start, NULL);
+        //time_spent_client = time(NULL);
 
         /**
          * waits for a client in queue
@@ -178,8 +138,6 @@ void *cashier(void *arg) {
         cashier_mutex_lock(cash_q[id].mutex, id, arg);
 
         //fprintf(stderr, "cahsier %d queue is empty before while: %d\n", id, ISEMPTY(cash_q[id]));
-        
-        time_spent_client = time(NULL);
 
         while (ISEMPTY(cash_q[id])) {
             fprintf(stderr, "cashier %d waiting for someone in queue\n", id);
@@ -207,9 +165,6 @@ void *cashier(void *arg) {
         //fifo_tsqueue_print(cash_q[id]);
         p = fifo_tsqueue_pop(&cash_q[id]);
 
-        /**
-         * TODO: solve seg fault here
-         */
         //fprintf(stderr, "cashier %d poped %p\n", id, p);
         //fprintf(stderr, "cahsier %d queue is empty after pop: %d\n", id, ISEMPTY(cash_q[id]));
 
@@ -260,11 +215,23 @@ void *cashier(void *arg) {
 
         cashier_mutex_unlock(&buff_lock[id], id, arg);
 
-        if (analytics_time-(time(NULL) - time_spent_client) < 0) {
+        gettimeofday(&stop, NULL);
+
+        timersub(&stop, &start, &result);
+
+        time_spent_client = (result.tv_sec*1000000 + result.tv_usec)/1000;
+
+        fprintf(stderr, "cashier %d time spent for clirnt %ld\n", id, time_spent_client);
+
+        if (analytics_time-time_spent_client < 0) {
             send_analytics(id, 0);
         } else {
-            send_analytics(id, analytics_time-(time(NULL) - time_spent_client));
+            send_analytics(id, analytics_time-time_spent_client);
         }
+
+        cashier_mutex_lock(&state_lock[id], id, arg);
+        open = state[id];
+        cashier_mutex_unlock(&state_lock[id], id, arg);
     }
 
     /**

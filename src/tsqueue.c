@@ -99,7 +99,7 @@ void *fifo_tsqueue_pop(fifo_tsqueue_t *queue) {
 
     if (pthread_mutex_lock(queue->mutex) != 0) {
         perror("tsqueue error during mutex locking");
-        return (void*)-1;
+        return NULL;
     }
 
     ret = queue->head->el;
@@ -112,7 +112,7 @@ void *fifo_tsqueue_pop(fifo_tsqueue_t *queue) {
 
     if (pthread_mutex_unlock(queue->mutex) != 0) {
         perror("tsqueue error during mutex unlocking");
-        return (void*)-1;
+        return NULL;
     }
 
     return ret;
