@@ -10,8 +10,8 @@ typedef struct _fifo_tsqueue_t {
     ts_queue_el *head;
     ts_queue_el *tail;
     int n_elements;
-    pthread_mutex_t mutex;
-    pthread_cond_t empty;
+    pthread_mutex_t *mutex;
+    pthread_cond_t *empty;
 } fifo_tsqueue_t;
 
 
