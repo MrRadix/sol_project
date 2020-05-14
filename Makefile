@@ -18,7 +18,7 @@ TARGET = $(BINDIR)/supermarket
 
 all: $(TARGET)
 
-$(TARGET) : $(BUILDDIR)/supermarket.o $(BUILDDIR)/client.o $(BUILDDIR)/cashier.o $(BUILDDIR)/director.o $(LIBDIR)/libtsqueue.a
+$(TARGET) : $(BUILDDIR)/supermarket.o $(BUILDDIR)/client.o $(BUILDDIR)/cashier.o $(BUILDDIR)/director.o $(LIBDIR)/libtsqueue.so
 	$(CC) $(CFLAGS) $(THREADS) $(INCLUDES) $(LDFLAGS) $(LIBS) -g $^ -o $@
 
 $(BUILDDIR)/supermarket.o : $(SRCDIR)/supermarket.c
@@ -33,11 +33,12 @@ $(BUILDDIR)/cashier.o : $(SRCDIR)/cashier.c $(INCDIR)/cashier.h
 $(BUILDDIR)/director.o : $(SRCDIR)/director.c $(INCDIR)/director.h
 	$(CC) $(CFLAGS) $(INCLUDES) -g -c $< -o $@
 
-$(LIBDIR)/libtsqueue.a : $(BUILDDIR)/tsqueue.o
-	ar rcs $@ $<
+$(LIBDIR)/libtsqueue.so : $(BUILDDIR)/tsqueue.o
+	gcc -shared $< -o $@
+	#ar rcs $@ $<
 
 $(BUILDDIR)/tsqueue.o : $(SRCDIR)/tsqueue.c
-	$(CC) $(CFLAGS) $(THREADS) $(INCLUDES) -c $< -o $@
+	$(CC) $(CFLAGS) $(THREADS) $(INCLUDES) -fPIC -c $< -o $@
 
 clean:
 	rm build/*

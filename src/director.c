@@ -1,5 +1,4 @@
 #include "director.h"
-#include "cashier.h"
 #include "client.h"
 #include <stdio.h>
 #include <errno.h>
@@ -43,12 +42,15 @@ void *clients_handler(void *arg) {
     int k = ((struct clients_handler_args *)arg)->n_cashiers;
     int t = ((struct clients_handler_args *)arg)->client_max_time;
     int p = ((struct clients_handler_args *)arg)->n_max_products;
+    int channel;
+    int message;
+    int randn;
 
     int id = 0;
     pthread_t client_thread;
     struct client_args *args;
 
-    unsigned int seed = time(NULL) ^ c ^ e;
+    unsigned int seed = time(NULL);
 
     while (!quit && !closing) {
 
@@ -66,8 +68,10 @@ void *clients_handler(void *arg) {
             args->id = id;
             args->max_cash = k;
             args->purchase_time = (rand_r(&seed) % (t - 9)) + 10;
-            args->products = rand_r(&seed) % p+1;
-            
+
+            args->products = rand_r(&seed) % (p+1); 
+
+            fprintf(stderr, "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ %d\n", args->products);           
             pthread_create(&client_thread, NULL, client, (void*)args);
             clients_inside++;
 
@@ -76,6 +80,17 @@ void *clients_handler(void *arg) {
         }
 
         director_mutex_unlock(&clients_inside_lock);
+
+        while (!fifo_tsqueue_isempty(zero_products_q)) {
+            fprintf(stderr, "bbbbbbbbbbbbbbbbbbbb   director exiting client with 0 product");
+            channel = *(int*)fifo_tsqueue_pop(&zero_products_q);
+            message = D_EXIT_MESSAGE;
+
+            if (write(channel, &message, sizeof(int)) < 0) {
+                perror("director error during sendinng exit message to client");
+                pthread_exit((void*)EXIT_FAILURE);
+            }
+        }
     }
 
     //fprintf(stderr, "end of client handler\n");

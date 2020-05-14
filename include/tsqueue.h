@@ -14,7 +14,6 @@ typedef struct _fifo_tsqueue_t {
     pthread_cond_t *empty;
 } fifo_tsqueue_t;
 
-
 /**
  * params:
  *  - queue:    queue to initialize

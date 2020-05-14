@@ -1,15 +1,14 @@
-#include "client.h"
-#include "cashier.h"
 #include "director.h"
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 #define K 20          // cashers number
-#define INITKN 1     // initial cashiers number INITKN > 0
+#define INITKN 20     // initial cashiers number INITKN > 0
 #define C 2000        // customers number
 #define E 1999          // customers every group 0 < E < C
 #define T 11            // max time for purchases in milliseconds T > 10
-#define P 100           // max number of product for each customer P >= 0
+#define P 10           // max number of product for each customer P > 0
 
 /**
  * time in milliseconds to process every product

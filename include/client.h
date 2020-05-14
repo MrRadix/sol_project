@@ -1,5 +1,7 @@
 #include <time.h>
 #include <pthread.h>
+#include "cashier.h"
+#define D_EXIT_MESSAGE 1
 #define MAXOPIPES 500
 
 struct client_args {
@@ -25,6 +27,8 @@ int clients_inside;
 pthread_cond_t max_opened_pipes;
 pthread_mutex_t opened_pipes_lock;
 int opened_pipes;
+
+fifo_tsqueue_t zero_products_q;
 
 void client_thread_init();
 
