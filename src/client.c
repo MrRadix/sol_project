@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <stdio.h>
+#include <sys/time.h>
 
 void client_mutex_lock(pthread_mutex_t *mtx, void *p) {
     int err;
@@ -87,9 +88,8 @@ void client_quit(int cpipe[2], void *arg, int id) {
 
 } 
 
-void *client(void *arg) {
-    time_t enter_time   = time(NULL);
 
+void *client(void *arg) {
     int id              = ((struct client_args*)arg)->id;
     int p_time          = ((struct client_args*)arg)->purchase_time;
     int max_cash        = ((struct client_args*)arg)->max_cash;
@@ -97,11 +97,15 @@ void *client(void *arg) {
 
     unsigned int seed   = time(NULL) ^ id;
 
-    int queues_viewed   = 0;
-    int cashier_open    = 0;
-    int exit_queue      = 0;
+    struct timeval sm_start, sm_stop, sm_result;
+    struct timeval queue_start, queue_stop, queue_result;
+    
+    long sm_time;       // total time inside supermarket in milliseconds
+    long queue_time;    // total time inside queue in milliseconds 
 
-    client_data data;
+    int queues_viewed   = 0;
+    int cashier_open    = 0;    //aux variable
+    int exit_queue      = 0;
 
     time_t enter_queue_time;
 
@@ -110,6 +114,8 @@ void *client(void *arg) {
     int ca_2_cl[2];
     int response;
     int read_val;
+
+    gettimeofday(&sm_start, NULL);
 
     //fprintf(stderr, "started client %d\n", id);
 
@@ -163,6 +169,11 @@ void *client(void *arg) {
             pthread_exit((void*)EXIT_FAILURE);
         }
 
+        gettimeofday(&sm_stop, NULL);
+        timersub(&sm_stop, &sm_start, &sm_result);
+
+        sm_time = (sm_result.tv_sec*1000000 + sm_result.tv_usec)/1000;
+
         client_mutex_lock(&clients_inside_lock, arg);
         clients_inside--;
         client_cond_signal(&max_clients_inside, arg);
@@ -175,10 +186,18 @@ void *client(void *arg) {
             pthread_exit((void*)EXIT_FAILURE);
         }
 
-        if (response == D_EXIT_MESSAGE) {
-            fprintf(stderr, "ccccccccccccccccccccclient %d received exit message from director\n", id);
-            client_quit(ca_2_cl, arg, id);
-        }
+        client_mutex_lock(&dir_buff_lock, arg);
+        dir_buff->id = id;
+        dir_buff->n_products = products;
+        dir_buff->q_time = 0;
+        dir_buff->q_viewed = 0;
+        dir_buff->sm_time = sm_time;
+        
+        dir_buff_is_empty = 0;
+        client_cond_signal(&dir_buff_empty, arg);
+        client_mutex_unlock(&dir_buff_lock, arg);
+
+        client_quit(ca_2_cl, arg, id);
     }
     
 
@@ -187,7 +206,8 @@ void *client(void *arg) {
     /**
      * TODO: client with 0 product requests exit to director
      */ 
-    enter_queue_time = time(NULL);
+    //enter_queue_time = time(NULL);
+    gettimeofday(&queue_start, NULL);
     while (!exit_queue) {
 
         if (quit){ 
@@ -253,19 +273,24 @@ void *client(void *arg) {
 
     fprintf(stderr, "----------- client %d sending all data to cashier %d\n", id, cashier_id);
     
-    data.q_time = time(NULL)-enter_queue_time;
-    data.id = id;
-    data.n_products = products;
-    data.q_viewed = queues_viewed;
-    data.sm_time = time(NULL)-enter_time;
+    gettimeofday(&queue_stop, NULL);
+    gettimeofday(&sm_stop, NULL);
+
+    timersub(&sm_stop, &sm_start, &sm_result);
+
+    timersub(&queue_stop, &queue_start, &queue_result);
+    timersub(&sm_stop, &sm_start, &sm_result);
+
+    queue_time = (queue_result.tv_sec*1000000 + queue_result.tv_usec)/1000;
+    sm_time = (sm_result.tv_sec*1000000 + sm_result.tv_usec)/1000;
 
     client_mutex_lock(&buff_lock[cashier_id], arg);
 
-    buff[cashier_id].id = data.id;
-    buff[cashier_id].q_time = data.q_time;
-    buff[cashier_id].n_products = data.n_products;
-    buff[cashier_id].q_viewed = data.q_viewed;
-    buff[cashier_id].sm_time = data.sm_time;
+    buff[cashier_id].q_time = queue_time;
+    buff[cashier_id].sm_time = sm_time;
+    buff[cashier_id].id = id;
+    buff[cashier_id].n_products = products;
+    buff[cashier_id].q_viewed = queues_viewed;
 
     buff_is_empty[cashier_id] = 0;
 
@@ -287,6 +312,11 @@ void client_thread_init() {
     pthread_cond_init(&max_clients_inside, NULL);
 
     fifo_tsqueue_init(&zero_products_q);
+
+    dir_buff = (client_data *)malloc(sizeof(client_data));
+    dir_buff_is_empty = 1;
+    pthread_mutex_init(&dir_buff_lock, NULL);
+    pthread_cond_init(&dir_buff_empty, NULL);
 
     clients_inside = 0;
     opened_pipes = 0;

@@ -3,19 +3,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define K 20          // cashers number
-#define INITKN 20     // initial cashiers number INITKN > 0
-#define C 2000        // customers number
-#define E 1999          // customers every group 0 < E < C
+#define K 10         // cashers number
+#define INITKN 5     // initial cashiers number INITKN > 0
+#define C 50        // customers number
+#define E 3          // customers every group 0 < E < C
 #define T 11            // max time for purchases in milliseconds T > 10
-#define P 10           // max number of product for each customer P > 0
+#define P 100           // max number of product for each customer P > 0
 
 /**
  * time in milliseconds to process every product
  */
 #define PRODTIME 5
 
-#define ANALYTICS_INTERVAL 500
+#define ANALYTICS_INTERVAL 10
 
 int client_cashier_test();
 
@@ -31,7 +31,7 @@ int main(int argc, char const *argv[])
     d_args->n_max_product = P;
     d_args->product_time = PRODTIME;
     d_args->analytics_t_intervall = ANALYTICS_INTERVAL;
-    d_args->s1 = 6;
+    d_args->s1 = 4;
     d_args->s2 = 10;
 
     pthread_create(&director_thread, NULL, director, (void *)d_args);

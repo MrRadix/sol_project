@@ -12,7 +12,7 @@ void cashier_mutex_lock(pthread_mutex_t *mtx, int id, void *p) {
 
     if ((err = pthread_mutex_lock(mtx)) != 0) {
         errno = err;
-        perror("lock");
+        perror("cashier error on lock");
         free(p);
         pthread_mutex_destroy(&state_lock[id]);
         pthread_mutex_destroy(&buff_lock[id]);
@@ -26,7 +26,7 @@ void cashier_mutex_unlock(pthread_mutex_t *mtx, int id, void *p) {
 
     if ((err = pthread_mutex_unlock(mtx)) != 0) {
         errno = err;
-        perror("lock");
+        perror("cashier error on unlock");
         free(p);
         pthread_mutex_destroy(&state_lock[id]);
         pthread_mutex_destroy(&buff_lock[id]);
@@ -40,7 +40,7 @@ void cashier_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mtx, int id, void 
 
     if ((err = pthread_cond_wait(cond, mtx)) != 0) {
         errno = err;
-        perror("lock");
+        perror("cashier error on wait");
         free(p);
         pthread_mutex_destroy(&state_lock[id]);
         pthread_mutex_destroy(&buff_lock[id]);
@@ -111,7 +111,7 @@ void *cashier(void *arg) {
     int open;
     int is_empty;
     int cpipe;
-    client_data data;
+    client_data *c_data;
     long time_spent_client;
     struct timeval start, stop, result;
     
@@ -130,7 +130,6 @@ void *cashier(void *arg) {
     while (open) {
         
         gettimeofday(&start, NULL);
-        //time_spent_client = time(NULL);
 
         /**
          * waits for a client in queue
@@ -202,12 +201,12 @@ void *cashier(void *arg) {
 
         //fprintf(stderr, "=========> cashier %d finished sleeping\n", id);
 
-        
-        data.id = buff[id].id;
-        data.n_products = buff[id].n_products;
-        data.q_time = buff[id].q_time;
-        data.q_viewed = buff[id].q_viewed;
-        data.sm_time = buff[id].sm_time;
+        c_data = (client_data *)malloc(sizeof(client_data));
+        c_data->id = buff[id].id;
+        c_data->n_products = buff[id].n_products;
+        c_data->q_time = buff[id].q_time;
+        c_data->q_viewed = buff[id].q_viewed;
+        c_data->sm_time = buff[id].sm_time;
 
         buff_is_empty[id] = 1;
 
@@ -216,6 +215,8 @@ void *cashier(void *arg) {
         cashier_mutex_unlock(&buff_lock[id], id, arg);
 
         gettimeofday(&stop, NULL);
+
+        fifo_tsqueue_push(&clients_info_q, c_data, sizeof(c_data));
 
         timersub(&stop, &start, &result);
 
@@ -323,5 +324,6 @@ void cashier_thread_init(int n_cashiers, int n_clients) {
     cash_state_init(&state, n_cashiers, 0);
     cash_buff_init(&buff, n_cashiers);
 
+    fifo_tsqueue_init(&clients_info_q);
     fifo_tsqueue_init(&analytics_q);
 }

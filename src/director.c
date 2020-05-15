@@ -44,11 +44,12 @@ void *clients_handler(void *arg) {
     int p = ((struct clients_handler_args *)arg)->n_max_products;
     int channel;
     int message;
-    int randn;
 
     int id = 0;
     pthread_t client_thread;
     struct client_args *args;
+
+    client_data *c_data;
 
     unsigned int seed = time(NULL);
 
@@ -82,7 +83,7 @@ void *clients_handler(void *arg) {
         director_mutex_unlock(&clients_inside_lock);
 
         while (!fifo_tsqueue_isempty(zero_products_q)) {
-            fprintf(stderr, "bbbbbbbbbbbbbbbbbbbb   director exiting client with 0 product");
+            fprintf(stderr, "bbbbbbbbbbbbbbbbbbbb director exiting client with 0 product");
             channel = *(int*)fifo_tsqueue_pop(&zero_products_q);
             message = D_EXIT_MESSAGE;
 
@@ -90,6 +91,25 @@ void *clients_handler(void *arg) {
                 perror("director error during sendinng exit message to client");
                 pthread_exit((void*)EXIT_FAILURE);
             }
+
+            director_mutex_lock(&dir_buff_lock);
+            while(dir_buff_is_empty) {
+                director_cond_wait(&dir_buff_empty, &dir_buff_lock);
+            }
+
+            c_data = (client_data *)malloc(sizeof(client_data));
+
+            c_data->id = dir_buff->id;
+            c_data->n_products = dir_buff->n_products;
+            c_data->q_time = dir_buff->q_time;
+            c_data->q_viewed = dir_buff->q_viewed;
+            c_data->sm_time = dir_buff->sm_time;
+
+            dir_buff_is_empty = 1;
+
+            director_mutex_unlock(&dir_buff_lock);
+
+            fifo_tsqueue_push(&clients_info_q, c_data, sizeof(c_data));
         }
     }
 
@@ -133,6 +153,10 @@ void *cashiers_handler(void *arg) {
     pthread_t cashier_thread;
     unsigned int seed = time(NULL) ^ s1 ^ s2;
     
+    /**
+     * auxiliary variable for checking if a cashier is open
+     * used in cashier chosing whiles
+     */
     int cashier_open = 0;
     int i;
 
@@ -182,7 +206,6 @@ void *cashiers_handler(void *arg) {
          * closing cashier if number of cashiers 
          * with at most 1 client in queue is equal to s1
          */
-        //fprintf(stderr, "cashiers with one client: %d\n", cashiers_with_one_c(one_client, k));
         if (cashiers_with_one_c(one_client, k) >= s1 && open_cashiers > 1) {
 
             for (i = 0; i < k; i++) {
@@ -303,13 +326,13 @@ void *director(void *arg) {
 
     /**
      * TODO: check if arguments from config file are valid
-     * TODO: start cashiers
+     * done TODO: start cashiers
      * done TODO: start clients
-     * TODO: hanlde clients with 0 products
-     * TODO: get client information from cashiers
-     * TODO: closing and opening cashes in base of s1 and s2 parameters
+     * done TODO: hanlde clients with 0 products
+     * done TODO: get client information from cashiers
+     * TODO: write log file at the end
+     * done TODO: closing and opening cashes in base of s1 and s2 parameters
      * TODO: get cashier information when it closes
-     * TODO: handle clients with 0 products
      * TODO: quit safely when quit = 1
      */
 

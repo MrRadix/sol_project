@@ -21,6 +21,15 @@ pthread_cond_t max_clients_inside;
 int clients_inside;
 
 /**
+ * buffer of 1 position where clients store 
+ * their informations for director
+ */
+client_data *dir_buff;
+int dir_buff_is_empty;
+pthread_mutex_t dir_buff_lock;
+pthread_cond_t dir_buff_empty;
+
+/**
  * for bounding number of pipes in the same time
  * the limit is specified by MAXOPIPES macro
  */

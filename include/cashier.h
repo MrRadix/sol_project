@@ -35,8 +35,8 @@ struct cashier_args {
 typedef struct _client_data {
     int id;
     int n_products;     // number of products purchased
-    time_t sm_time;     // time spent inside supermarket
-    time_t q_time;      // time spent in queue
+    time_t sm_time;     // time spent inside supermarket in milliseconds
+    time_t q_time;      // time spent in queue in milliseconds
     int q_viewed;       // number of queue viewed
 } client_data;
 
@@ -76,6 +76,13 @@ fifo_tsqueue_t *cash_q;
  * (n_clients waiting) for director
  */
 fifo_tsqueue_t analytics_q;
+
+
+/**
+ * queue where clients info are stored by cashiers, or by clients with 
+ * 0 products, for director
+ */
+fifo_tsqueue_t clients_info_q;
 
 /**
  * if quit = 1 clients quits immediatly for supermarket closing
