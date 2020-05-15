@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <signal.h>
+#include <sched.h>
 
 void director_mutex_lock(pthread_mutex_t *mtx) {
     int err;
@@ -42,28 +44,42 @@ void *clients_handler(void *arg) {
     int k = ((struct clients_handler_args *)arg)->n_cashiers;
     int t = ((struct clients_handler_args *)arg)->client_max_time;
     int p = ((struct clients_handler_args *)arg)->n_max_products;
-    int channel;
+    void* channel;
     int message;
+    int remaining_clients;
+
+    mask_signals();
 
     int id = 0;
     pthread_t client_thread;
     struct client_args *args;
 
-    client_data *c_data;
-
     unsigned int seed = time(NULL);
 
     while (!quit && !closing) {
 
+        /**
+         * waits if clients inside supermarket are more than c-e
+         */
         director_mutex_lock(&clients_inside_lock);
-        while (clients_inside >= c-e) {
+        while (clients_inside >= c-e && !closing && !quit) {
             fprintf(stderr, "inside while: %d\n", clients_inside);
             director_cond_wait(&max_clients_inside, &clients_inside_lock);
             //fprintf(stderr, "waked up director by client\n");
         }
+        director_mutex_unlock(&clients_inside_lock);
+
+        if (closing || quit) {
+            continue;
+        }
+
+        director_mutex_lock(&clients_inside_lock);
 
         //fprintf(stderr, "effective clients: %d\n", clients_inside);
 
+        /**
+         * starts c-clients_inside clients
+         */
         for (int i = clients_inside; i < c; i++) {
             args = (struct client_args *)malloc(sizeof(struct client_args));
             args->id = id;
@@ -82,35 +98,42 @@ void *clients_handler(void *arg) {
 
         director_mutex_unlock(&clients_inside_lock);
 
+        /**
+         * handles clients with 0 products
+         */
         while (!fifo_tsqueue_isempty(zero_products_q)) {
             fprintf(stderr, "bbbbbbbbbbbbbbbbbbbb director exiting client with 0 product");
-            channel = *(int*)fifo_tsqueue_pop(&zero_products_q);
+            channel = fifo_tsqueue_pop(&zero_products_q);
             message = D_EXIT_MESSAGE;
 
-            if (write(channel, &message, sizeof(int)) < 0) {
+            if (write(*(int*)channel, &message, sizeof(int)) < 0) {
                 perror("director error during sendinng exit message to client");
                 pthread_exit((void*)EXIT_FAILURE);
             }
+            free(channel);
 
             director_mutex_lock(&dir_buff_lock);
             while(dir_buff_is_empty) {
                 director_cond_wait(&dir_buff_empty, &dir_buff_lock);
             }
 
-            c_data = (client_data *)malloc(sizeof(client_data));
-
-            c_data->id = dir_buff->id;
-            c_data->n_products = dir_buff->n_products;
-            c_data->q_time = dir_buff->q_time;
-            c_data->q_viewed = dir_buff->q_viewed;
-            c_data->sm_time = dir_buff->sm_time;
+            fifo_tsqueue_push(&clients_info_q, (void*)dir_buff, sizeof(dir_buff));
 
             dir_buff_is_empty = 1;
-
             director_mutex_unlock(&dir_buff_lock);
-
-            fifo_tsqueue_push(&clients_info_q, c_data, sizeof(c_data));
         }
+    }
+
+    // waits for ending of all clients
+    director_mutex_lock(&clients_inside_lock);
+    remaining_clients = clients_inside;
+    director_mutex_unlock(&clients_inside_lock);
+    while (remaining_clients > 0) {
+        sched_yield();
+        
+        director_mutex_lock(&clients_inside_lock);
+        remaining_clients = clients_inside;
+        director_mutex_unlock(&clients_inside_lock);
     }
 
     //fprintf(stderr, "end of client handler\n");
@@ -142,6 +165,8 @@ void *cashiers_handler(void *arg) {
      */
     int *one_client = (int*)calloc(k, sizeof(int));
 
+    int remaining_clients;
+
     /**
      * number of cashiers open
      */
@@ -160,10 +185,15 @@ void *cashiers_handler(void *arg) {
     int cashier_open = 0;
     int i;
 
+    mask_signals();
+
     for (i = 0; i<def_number; i++) {
         state[i] = 1;
     }
 
+    /**
+     * starts default cashiers number
+     */
     for (i = 0; i<def_number; i++) {
         open_cashiers++;
 
@@ -177,20 +207,31 @@ void *cashiers_handler(void *arg) {
     }
 
     //pthread_join(cashier_thread, NULL);
-    /**
-     * TODO: solve opening cashier 2 every time
-     */
     while (!quit) {
 
+        director_mutex_lock(&clients_inside_lock);
+        remaining_clients = clients_inside;
+        director_mutex_unlock(&clients_inside_lock);
+        
+        if (closing && remaining_clients == 0) {
+            break;
+        }
+
+        /**
+         * waits for data in analytics queue
+         */
         director_mutex_lock(analytics_q.mutex);
-        while(ISEMPTY(analytics_q)) {
+        while(ISEMPTY(analytics_q) && !quit) {
             fprintf(stderr, "analytics_q is empty\n");
             director_cond_wait(analytics_q.empty, analytics_q.mutex);
             fprintf(stderr, "director waked up by cashier\n");
         }
         director_mutex_unlock(analytics_q.mutex);
-        
-        data = (struct analytics_data *)malloc(sizeof(struct analytics_data));
+
+        if (quit) {
+            continue;
+        }
+    
         data = (struct analytics_data *)fifo_tsqueue_pop(&analytics_q);
 
         fprintf(stderr, "aaaaaaaaaaaaaaaaaaaaaaaaaaa director received data from cashier %d n clients %d\n", data->id, data->n_clients);
@@ -265,10 +306,23 @@ void *cashiers_handler(void *arg) {
         free(data);
     }
 
+    // waits for ending of all clients
+    director_mutex_lock(&clients_inside_lock);
+    remaining_clients = clients_inside;
+    director_mutex_unlock(&clients_inside_lock);
+    while (remaining_clients > 0) {
+        sched_yield();
+        
+        director_mutex_lock(&clients_inside_lock);
+        remaining_clients = clients_inside;
+        director_mutex_unlock(&clients_inside_lock);
+    }
+
+    free(one_client);
+
     pthread_exit((void*)EXIT_SUCCESS);
 
 }
-
 
 void *director(void *arg) {
     int c               = ((struct director_args *)arg)->n_clients;
@@ -290,6 +344,8 @@ void *director(void *arg) {
 
     pthread_t cl_h_thread;
     pthread_t ca_h_thread;
+
+    mask_signals();
 
     pthread_mutex_init(&clients_inside_lock, NULL);
     
@@ -324,6 +380,12 @@ void *director(void *arg) {
     pthread_join(cl_h_thread, NULL);
     pthread_join(ca_h_thread, NULL);
 
+    free(ca_h_args);
+    free(cl_h_args);
+
+    cashier_thread_clear(k,c);
+    client_thread_clear();
+
     /**
      * TODO: check if arguments from config file are valid
      * done TODO: start cashiers
@@ -333,7 +395,7 @@ void *director(void *arg) {
      * TODO: write log file at the end
      * done TODO: closing and opening cashes in base of s1 and s2 parameters
      * TODO: get cashier information when it closes
-     * TODO: quit safely when quit = 1
+     * done TODO: quit safely when quit = 1
      */
 
     pthread_exit((void*)EXIT_SUCCESS);

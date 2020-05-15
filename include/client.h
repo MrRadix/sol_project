@@ -40,4 +40,4 @@ int opened_pipes;
 fifo_tsqueue_t zero_products_q;
 
 void client_thread_init();
-
+void client_thread_clear();

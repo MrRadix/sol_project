@@ -24,6 +24,32 @@ int fifo_tsqueue_init(fifo_tsqueue_t *queue) {
     return EXIT_SUCCESS;
 }
 
+int fifo_tsqueue_destroy(fifo_tsqueue_t *queue) {
+    void *el;
+    
+    while (!fifo_tsqueue_isempty(*queue)) {
+        el = fifo_tsqueue_pop(queue);
+        free(el);
+    }
+
+    /**
+    if (pthread_mutex_destroy(queue->mutex) != 0) {
+        perror("tsqueue error during mutex destroy");
+        return -1;
+    }
+
+    if (pthread_cond_destroy(queue->empty) != 0) {
+        perror("tsqueue error during condition variable destroy");
+        return -1;
+    }
+    */
+
+    free(queue->mutex);
+    free(queue->empty);
+
+    return 0;
+}
+
 int fifo_tsqueue_isempty(fifo_tsqueue_t queue) {
     
     if (pthread_mutex_lock(queue.mutex) != 0) {

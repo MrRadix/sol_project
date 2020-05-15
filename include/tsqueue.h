@@ -22,6 +22,11 @@ typedef struct _fifo_tsqueue_t {
 int fifo_tsqueue_init(fifo_tsqueue_t *queue);
 
 /**
+ * frees all allocated data and destroys mutex and condition variable
+ */
+int fifo_tsqueue_destroy(fifo_tsqueue_t *queue);
+
+/**
  * returns 1 if queue is empty 0 otherwise
  */
 int fifo_tsqueue_isempty(fifo_tsqueue_t queue);
