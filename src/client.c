@@ -79,7 +79,7 @@ void client_quit(int cpipe[2], int id) {
 
     client_cond_signal(&max_opened_pipes);
     client_mutex_unlock(&opened_pipes_lock);
-    //fprintf(stderr, "client %d finished\n", id);
+    fprintf(stderr, "---------------------------- client %d finished\n", id);
     pthread_exit((void*)EXIT_SUCCESS);
 
 }
@@ -297,10 +297,8 @@ void *client(void *arg) {
 }
 
 void client_thread_init() {
-    pthread_mutex_init(&clients_inside_lock, NULL);
     pthread_mutex_init(&opened_pipes_lock, NULL);
     pthread_cond_init(&max_opened_pipes, NULL);
-    pthread_cond_init(&max_clients_inside, NULL);
 
     fifo_tsqueue_init(&zero_products_q);
 
@@ -309,20 +307,12 @@ void client_thread_init() {
     pthread_mutex_init(&dir_buff_lock, NULL);
     pthread_cond_init(&dir_buff_empty, NULL);
 
-    clients_inside = 0;
     opened_pipes = 0;
 
 }
 
 void client_thread_clear() {
-    pthread_mutex_destroy(&clients_inside_lock);
-    pthread_mutex_destroy(&opened_pipes_lock);
-    pthread_cond_destroy(&max_opened_pipes);
-    pthread_cond_destroy(&max_clients_inside);
 
     fifo_tsqueue_destroy(&zero_products_q);
-    
     free(dir_buff);
-    pthread_mutex_destroy(&dir_buff_lock);
-    pthread_cond_destroy(&dir_buff_empty);
 }

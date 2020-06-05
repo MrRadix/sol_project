@@ -20,11 +20,30 @@ struct analytics_data {
     int id;
 };
 
+struct analytics_args {
+    int id;
+    int msec;
+};
+
 struct cashier_args {
     int id;
     int time_per_client;
     int analytics_time;
     int prod_time;
+};
+
+/**
+struct clients_time {
+    int id;
+    time_t time;
+};
+*/
+
+struct cashier_info {
+    int n_clients;              // number of served clients
+    int n_closings;             // number of closings
+    time_t *time_per_operiod;   // time for all opening periods
+    time_t *time_per_client;    // time of service of every client served
 };
 
 typedef struct _client_data {
@@ -50,6 +69,9 @@ int *state;
  */
 pthread_mutex_t *state_lock;
 
+
+pthread_mutex_t cashiers_open_lock;
+int cashiers_open;
 
 /**
  * comunication buffer between cashier and customer
@@ -78,6 +100,14 @@ fifo_tsqueue_t analytics_q;
  * 0 products, for director
  */
 fifo_tsqueue_t clients_info_q;
+
+/**
+ * mutex initialized by director
+ */
+pthread_mutex_t clients_inside_lock;
+pthread_cond_t max_clients_inside;
+int clients_inside;
+
 
 /**
  * if quit = 1 clients quits immediatly for supermarket closing

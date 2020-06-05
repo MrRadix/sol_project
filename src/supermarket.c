@@ -7,10 +7,10 @@
 #include <unistd.h>
 #include <string.h>
 
-#define K 40         // cashers number
-#define INITKN 30     // initial cashiers number INITKN > 0
-#define C 50        // customers number
-#define E 6          // customers every group 0 < E < C
+#define K 100         // cashers number
+#define INITKN 99     // initial cashiers number INITKN > 0
+#define C 500        // customers number
+#define E 100          // customers every group 0 < E < C
 #define T 11            // max time for purchases in milliseconds T > 10
 #define P 1           // max number of product for each customer P > 0
 
@@ -19,7 +19,7 @@
  */
 #define PRODTIME 50
 
-#define ANALYTICS_INTERVAL 1000
+#define ANALYTICS_INTERVAL 100
 
 
 void quit_handler(int signo) {
@@ -70,7 +70,7 @@ void set_sig_handler(void) {
         exit(EXIT_FAILURE);
     }
     
-    pthread_sigmask(SIG_SETMASK, &set, NULL);
+    //pthread_sigmask(SIG_SETMASK, &set, NULL);
 }
 
 int main(int argc, char const *argv[])

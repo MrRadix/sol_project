@@ -7,52 +7,107 @@
 #include <errno.h>
 
 
-void cashier_mutex_lock(pthread_mutex_t *mtx, int id, void *p) {
+void cashier_mutex_lock(pthread_mutex_t *mtx) {
     int err;
 
     if ((err = pthread_mutex_lock(mtx)) != 0) {
         errno = err;
         perror("cashier error on lock");
-        free(p);
-        pthread_mutex_destroy(&state_lock[id]);
-        pthread_mutex_destroy(&buff_lock[id]);
-        pthread_cond_destroy(&buff_empty[id]);
         pthread_exit((void*)EXIT_FAILURE);
     }
 }
 
-void cashier_mutex_unlock(pthread_mutex_t *mtx, int id, void *p) {
+void cashier_mutex_unlock(pthread_mutex_t *mtx) {
     int err;
 
     if ((err = pthread_mutex_unlock(mtx)) != 0) {
         errno = err;
         perror("cashier error on unlock");
-        free(p);
-        pthread_mutex_destroy(&state_lock[id]);
-        pthread_mutex_destroy(&buff_lock[id]);
-        pthread_cond_destroy(&buff_empty[id]);
         pthread_exit((void*)EXIT_FAILURE);
     }
 }
 
-void cashier_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mtx, int id, void *p) {
+void cashier_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mtx) {
     int err;
 
     if ((err = pthread_cond_wait(cond, mtx)) != 0) {
         errno = err;
         perror("cashier error on wait");
-        free(p);
-        pthread_mutex_destroy(&state_lock[id]);
-        pthread_mutex_destroy(&buff_lock[id]);
-        pthread_cond_destroy(&buff_empty[id]);
         pthread_exit((void*)EXIT_FAILURE);
     }
 }
 
-void send_analytics(int id, int msec) {
+void *send_analytics(void *arg) {
+    int id      = ((struct analytics_args*)arg)->id;
+    int msec    = ((struct analytics_args*)arg)->msec;
     struct timespec *res = (struct timespec *)malloc(sizeof(struct timespec));
     struct timespec *rem = (struct timespec *)malloc(sizeof(struct timespec));
-    struct analytics_data *data = (struct analytics_data *)malloc(sizeof(struct analytics_data));
+    struct analytics_data *data;
+    int remaining_clients;
+    int open;
+
+    float nsec = msec*1000000;
+    int sec = 0;
+
+    nsec = nsec/1000000000;
+    sec = (int)nsec;
+    nsec = (nsec-sec)*1000000000;
+
+    res->tv_sec = sec;
+    res->tv_nsec = (long)nsec;
+
+    cashier_mutex_lock(&state_lock[id]);
+    open = state[id];
+    cashier_mutex_unlock(&state_lock[id]);
+
+
+    while (!quit && open) {
+
+        fprintf(stderr, "locking clients_inside_lock\n");
+        cashier_mutex_lock(&clients_inside_lock);
+        remaining_clients = clients_inside;
+
+        fprintf(stderr, "unlocking clients_inside_lock\n");
+        cashier_mutex_unlock(&clients_inside_lock);
+        
+        if (closing && remaining_clients == 0) {
+            break;
+        }
+
+        if (nanosleep(res, rem) == -1) {
+            nanosleep(rem, NULL);
+        }
+
+        data = (struct analytics_data *)malloc(sizeof(struct analytics_data));
+        data->id = id;
+        data->n_clients = fifo_tsqueue_n_items(cash_q[id]);
+
+        fifo_tsqueue_push(&analytics_q, (void*)data, sizeof(data));
+        
+        free(data);
+        
+        fprintf(stderr, "locking state_lock\n");
+        cashier_mutex_lock(&state_lock[id]);
+        open = state[id];
+
+        fprintf(stderr, "unlocking state_lock\n");
+        cashier_mutex_unlock(&state_lock[id]);
+
+    }
+
+    free(res);
+    free(rem);
+    free(arg);
+    
+    fprintf(stderr, "analytics queue with %d elements\n", fifo_tsqueue_n_items(analytics_q));
+
+    pthread_exit((void*)EXIT_SUCCESS);
+}
+
+void aaasend_analytics(int id, int msec) {
+    struct timespec *res = (struct timespec *)malloc(sizeof(struct timespec));
+    struct timespec *rem = (struct timespec *)malloc(sizeof(struct timespec));
+    struct analytics_data *data;
 
     float nsec = msec*1000000;
     int sec = 0;
@@ -68,14 +123,16 @@ void send_analytics(int id, int msec) {
         nanosleep(rem, NULL);
     }
 
+    free(res);
+    free(rem);
+
+    data = (struct analytics_data *)malloc(sizeof(struct analytics_data));
     data->id = id;
     data->n_clients = fifo_tsqueue_n_items(cash_q[id]);
 
     fifo_tsqueue_push(&analytics_q, (void*)data, sizeof(data));
     
     free(data);
-    free(res);
-    free(rem);
     
     fprintf(stderr, "analytics queue with %d elements\n", fifo_tsqueue_n_items(analytics_q));
 
@@ -119,8 +176,8 @@ void *cashier(void *arg) {
     int open;
     int is_empty;
     int cpipe;
-    long time_spent_client;
-    struct timeval start, stop, result;
+    pthread_t analytics_thread;
+    struct analytics_args *a_args = (struct analytics_args*)malloc(sizeof(struct analytics_args));
 
     void *p = NULL;
     int message;
@@ -129,41 +186,47 @@ void *cashier(void *arg) {
 
     mask_signals();
 
+    cashier_mutex_lock(&cashiers_open_lock);
+    cashiers_open += 1;
+    cashier_mutex_unlock(&cashiers_open_lock);
+
+    a_args->id = id;
+    a_args->msec = analytics_time;
+    pthread_create(&analytics_thread, NULL, send_analytics, (void*)a_args);
+
     //fprintf(stderr, "------------opening cashier: %d-------------\n", id);
 
-    cashier_mutex_lock(&state_lock[id], id, arg);
+    cashier_mutex_lock(&state_lock[id]);
     open = state[id];
-    cashier_mutex_unlock(&state_lock[id], id, arg);
+    cashier_mutex_unlock(&state_lock[id]);
 
-    while (open && !quit) {
-        
-        gettimeofday(&start, NULL);
+    while (open) {
 
         /**
          * waits for a client in queue
          */
-        cashier_mutex_lock(cash_q[id].mutex, id, arg);
+        cashier_mutex_lock(cash_q[id].mutex);
 
         //fprintf(stderr, "cahsier %d queue is empty before while: %d\n", id, ISEMPTY(cash_q[id]));
 
         while (ISEMPTY(cash_q[id])) {
             fprintf(stderr, "cashier %d waiting for someone in queue\n", id);
-            cashier_mutex_lock(&state_lock[id], id, arg);
+            cashier_mutex_lock(&state_lock[id]);
             open = state[id];
-            cashier_mutex_unlock(&state_lock[id], id, arg);
+            cashier_mutex_unlock(&state_lock[id]);
 
             /**
              * checks if director decided to close cash
              */
-            if (!open && quit) {
+            if (!open) {
                 break;
             }
 
-            cashier_cond_wait(cash_q[id].empty, cash_q[id].mutex, id, arg);
+            cashier_cond_wait(cash_q[id].empty, cash_q[id].mutex);
         }
-        cashier_mutex_unlock(cash_q[id].mutex, id, arg);
+        cashier_mutex_unlock(cash_q[id].mutex);
 
-        if (!open && quit) {  
+        if (!open) {  
             continue;
         }
 
@@ -195,10 +258,10 @@ void *cashier(void *arg) {
         /**
          * waits for data in buffer
          */
-        cashier_mutex_lock(&buff_lock[id], id, arg);
+        cashier_mutex_lock(&buff_lock[id]);
         while (buff_is_empty[id]) {
             //fprintf(stderr, "=========> cashier %d buff is empty\n", id);
-            cashier_cond_wait(&buff_empty[id], &buff_lock[id], id, arg);
+            cashier_cond_wait(&buff_empty[id], &buff_lock[id]);
             //fprintf(stderr, "=========> cashier %d waked up\n", id);
         }
 
@@ -212,27 +275,13 @@ void *cashier(void *arg) {
 
         //fprintf(stderr, "cashier %d received all data from client %d\n", id, buff[id].id);
 
-        gettimeofday(&stop, NULL);
-
         fifo_tsqueue_push(&clients_info_q, (void*)&buff[id], sizeof(buff[id]));
 
-        cashier_mutex_unlock(&buff_lock[id], id, arg);
+        cashier_mutex_unlock(&buff_lock[id]);
 
-        timersub(&stop, &start, &result);
-
-        time_spent_client = (result.tv_sec*1000000 + result.tv_usec)/1000;
-
-        fprintf(stderr, "cashier %d time spent for clirnt %ld\n", id, time_spent_client);
-
-        if (analytics_time-time_spent_client < 0) {
-            send_analytics(id, 0);
-        } else {
-            send_analytics(id, analytics_time-time_spent_client);
-        }
-
-        cashier_mutex_lock(&state_lock[id], id, arg);
+        cashier_mutex_lock(&state_lock[id]);
         open = state[id];
-        cashier_mutex_unlock(&state_lock[id], id, arg);
+        cashier_mutex_unlock(&state_lock[id]);
     }
 
     /**
@@ -244,7 +293,6 @@ void *cashier(void *arg) {
         fprintf(stderr, "cahsier %d sending closing message\n", id);
 
         p = fifo_tsqueue_pop(&cash_q[id]);
-        //fprintf(stderr, "cashier %d closing, is empty %d\n", id, is_empty);
         if (p == NULL) {
             is_empty = fifo_tsqueue_isempty(cash_q[id]);
             fprintf(stderr, "cashier %d closing, p is NULL\n", id);
@@ -267,7 +315,21 @@ void *cashier(void *arg) {
         pthread_exit((void*)EXIT_FAILURE);
     }
 
-    //fprintf(stderr, "------------closing cashier: %d-------------\n", id);
+    pthread_join(analytics_thread, NULL);
+
+    fprintf(stderr, "------------closing cashier: %d-------------\n", id);
+
+    cashier_mutex_lock(&clients_inside_lock);
+    fprintf(stderr, "clients inside %d", clients_inside);
+    cashier_mutex_unlock(&clients_inside_lock);
+
+    cashier_mutex_lock(&cashiers_open_lock);
+    cashiers_open -= 1;
+    cashier_mutex_unlock(&cashiers_open_lock);
+
+    cashier_mutex_lock(&state_lock[id]);
+    state[id] = 0;
+    cashier_mutex_unlock(&state_lock[id]);
 
     pthread_exit((void*)EXIT_SUCCESS);
 }
@@ -312,14 +374,6 @@ void cash_lock_init(pthread_mutex_t **lock, int dim) {
     }
 }
 
-void cash_lock_destroy(pthread_mutex_t **lock, int dim) {
-
-    for (int i = 0; i < dim; i++) {
-        pthread_mutex_destroy(&(*lock)[i]);
-    }
-
-    free(*lock);
-}
 
 void cash_cond_init(pthread_cond_t **cond, int dim) {
     *cond = (pthread_cond_t *)malloc(dim*sizeof(pthread_cond_t));
@@ -327,15 +381,6 @@ void cash_cond_init(pthread_cond_t **cond, int dim) {
     for (int i = 0; i < dim; i++) {
         pthread_cond_init(&(*cond)[i], NULL);
     }
-}
-
-void cash_cond_destroy(pthread_cond_t **cond, int dim) {
-
-    for (int i = 0; i < dim; i++) {
-        pthread_cond_destroy(&(*cond)[i]);
-    }
-
-    free(*cond);
 }
 
 
@@ -348,15 +393,22 @@ void cashier_thread_init(int n_cashiers, int n_clients) {
     cash_state_init(&state, n_cashiers, 0);
     buff = (client_data *)malloc(n_cashiers*sizeof(client_data));
 
+    pthread_mutex_init(&clients_inside_lock, NULL);
+    pthread_cond_init(&max_clients_inside, NULL);
+    clients_inside = 0;
+
+    pthread_mutex_init(&cashiers_open_lock, NULL);
+    cashiers_open = 0;
+
     fifo_tsqueue_init(&clients_info_q);
     fifo_tsqueue_init(&analytics_q);
 }
 
 void cashier_thread_clear(int n_cashiers, int n_clients) {
     cash_queue_clear(&cash_q, n_cashiers);
-    cash_lock_destroy(&state_lock, n_cashiers);
-    cash_lock_destroy(&buff_lock, n_cashiers);
-    cash_cond_destroy(&buff_empty, n_cashiers);
+    free(state_lock);
+    free(buff_lock);
+    free(buff_empty);
     free(buff_is_empty);
     free(state);
     free(buff);

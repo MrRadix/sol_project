@@ -32,18 +32,6 @@ int fifo_tsqueue_destroy(fifo_tsqueue_t *queue) {
         free(el);
     }
 
-    /**
-    if (pthread_mutex_destroy(queue->mutex) != 0) {
-        perror("tsqueue error during mutex destroy");
-        return -1;
-    }
-
-    if (pthread_cond_destroy(queue->empty) != 0) {
-        perror("tsqueue error during condition variable destroy");
-        return -1;
-    }
-    */
-
     free(queue->mutex);
     free(queue->empty);
 

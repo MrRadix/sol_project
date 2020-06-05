@@ -14,13 +14,6 @@ struct client_args {
 void *client(void *arg);
 
 /**
- * mutex initialized by director
- */
-pthread_mutex_t clients_inside_lock;
-pthread_cond_t max_clients_inside;
-int clients_inside;
-
-/**
  * buffer of 1 position where clients store 
  * their informations for director
  */
