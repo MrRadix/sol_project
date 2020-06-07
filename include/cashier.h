@@ -1,19 +1,9 @@
 #include "tsqueue.h"
+#include "linkedlist.h"
 #include <time.h>
 #include <signal.h>
 #define NEXT 1
 #define CLOSING 0
-
-/*
-typedef struct _per_client_info {
-
-} per_client_info;
-
-typedef struct _cashier_data {
-    int n_clients;
-    
-} cashier_data;
-*/
 
 struct analytics_data {
     int n_clients;
@@ -32,25 +22,25 @@ struct cashier_args {
     int prod_time;
 };
 
-/**
-struct clients_time {
-    int id;
-    time_t time;
-};
-*/
 
+/**
+ * cashier info to write in log file
+ */
 struct cashier_info {
     int n_clients;              // number of served clients
     int n_closings;             // number of closings
-    time_t *time_per_operiod;   // time for all opening periods
-    time_t *time_per_client;    // time of service of every client served
+    int_list_node *time_per_operiod;   // time for all opening periods
+    int_list_node *time_per_client;    // time of service of every client served
 };
 
+/**
+ * client info to write in log file
+ */
 typedef struct _client_data {
     int id;
     int n_products;     // number of products purchased
-    time_t sm_time;     // time spent inside supermarket in milliseconds
-    time_t q_time;      // time spent in queue in milliseconds
+    long sm_time;     // time spent inside supermarket in milliseconds
+    long q_time;      // time spent in queue in milliseconds
     int q_viewed;       // number of queue viewed
 } client_data;
 
@@ -68,10 +58,6 @@ int *state;
  * state[i] lock is destroyed when cashier i closes
  */
 pthread_mutex_t *state_lock;
-
-
-pthread_mutex_t cashiers_open_lock;
-int cashiers_open;
 
 /**
  * comunication buffer between cashier and customer
@@ -100,6 +86,14 @@ fifo_tsqueue_t analytics_q;
  * 0 products, for director
  */
 fifo_tsqueue_t clients_info_q;
+
+/**
+ * array of cashiers info 
+ */
+struct cashier_info *cashiers_info;
+
+pthread_mutex_t cashiers_info_lock;
+
 
 /**
  * mutex initialized by director

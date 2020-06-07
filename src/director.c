@@ -424,9 +424,8 @@ void *director(void *arg) {
      * done TODO: get client information from cashiers
      * TODO: write log file at the end
      * done TODO: closing and opening cashes in base of s1 and s2 parameters
-     * TODO: get cashier information when it closes
+     * done TODO: get cashier information when it closes
      * done TODO: quit safely when quit = 1
-     * TODO: solve lock when SIGHUP
      */
 
     pthread_exit((void*)EXIT_SUCCESS);

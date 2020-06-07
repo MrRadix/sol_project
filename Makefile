@@ -5,20 +5,27 @@ THREADS		= -pthread
 LIBDIR		= ./lib
 INCDIR		= ./include
 SRCDIR		= ./src
+TSTSRC		= ./tests
 BINDIR		= ./bin
 BUILDDIR	= ./build
 
 INCLUDES	= -I $(INCDIR)
 LDFLAGS		= -L $(LIBDIR)
-LIBS 		= -ltsqueue -lpthread
+LIBS 		= -ltsqueue -lpthread -lllist
 
 TARGET = $(BINDIR)/supermarket
+TEST_LLIST = $(BINDIR)/linkedlist_test
 
-.PHONY: all clean test2
+.PHONY: all clean test2 tests
 
 all: $(TARGET)
 
-$(TARGET) : $(BUILDDIR)/supermarket.o $(BUILDDIR)/client.o $(BUILDDIR)/cashier.o $(BUILDDIR)/director.o $(LIBDIR)/libtsqueue.a
+tests: $(TEST_LLIST)
+
+$(TEST_LLIST) : $(TSTSRC)/linkedlist_test.c $(LIBDIR)/libllist.a
+	$(CC) $(CFLAGS) $(INCLUDES) $(LDFLAGS) $(LIBS) -g $^ -o $@
+
+$(TARGET) : $(BUILDDIR)/supermarket.o $(BUILDDIR)/client.o $(BUILDDIR)/cashier.o $(BUILDDIR)/director.o $(LIBDIR)/libtsqueue.a $(LIBDIR)/libllist.a
 	$(CC) $(CFLAGS) $(THREADS) $(INCLUDES) $(LDFLAGS) $(LIBS) -g $^ -o $@
 
 $(BUILDDIR)/supermarket.o : $(SRCDIR)/supermarket.c
@@ -38,6 +45,12 @@ $(LIBDIR)/libtsqueue.a : $(BUILDDIR)/tsqueue.o
 
 $(BUILDDIR)/tsqueue.o : $(SRCDIR)/tsqueue.c $(INCDIR)/tsqueue.h
 	$(CC) $(CFLAGS) $(THREADS) $(INCLUDES) -c $< -o $@
+
+$(LIBDIR)/libllist.a : $(BUILDDIR)/linkedlist.o
+	ar rcs $@ $<
+
+$(BUILDDIR)/linkedlist.o : $(SRCDIR)/linkedlist.c $(INCDIR)/linkedlist.h
+	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 clean:
 	rm build/*

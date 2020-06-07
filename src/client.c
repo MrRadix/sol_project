@@ -166,7 +166,7 @@ void *client(void *arg) {
         gettimeofday(&sm_stop, NULL);
         timersub(&sm_stop, &sm_start, &sm_result);
 
-        sm_time = (sm_result.tv_sec*1000000 + sm_result.tv_usec)/1000;
+        sm_time = (sm_result.tv_sec*1000 + sm_result.tv_usec)/1000;
 
         client_mutex_lock(&clients_inside_lock);
         clients_inside--;

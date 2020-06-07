@@ -12,7 +12,7 @@
 #define C 500        // customers number
 #define E 100          // customers every group 0 < E < C
 #define T 11            // max time for purchases in milliseconds T > 10
-#define P 1           // max number of product for each customer P > 0
+#define P 20           // max number of product for each customer P > 0
 
 /**
  * time in milliseconds to process every product
@@ -23,12 +23,10 @@
 
 
 void quit_handler(int signo) {
-    fprintf(stderr, "received %d SIGQUIT", signo);
     quit = 1;
 }
 
 void hup_handler(int signo) {
-    fprintf(stderr, "received %d SIGHUP", signo);
     closing = 1;
 }
 
