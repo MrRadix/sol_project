@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include <sched.h>
+#include <string.h>
 
 void director_mutex_lock(pthread_mutex_t *mtx) {
     int err;
@@ -63,7 +64,7 @@ void *clients_handler(void *arg) {
          */
         director_mutex_lock(&clients_inside_lock);
         while (clients_inside >= c-e && !closing && !quit) {
-            fprintf(stderr, "inside while: %d\n", clients_inside);
+            //fprintf(stderr, "inside while: %d\n", clients_inside);
             director_cond_wait(&max_clients_inside, &clients_inside_lock);
             //fprintf(stderr, "waked up director by client\n");
         }
@@ -88,7 +89,7 @@ void *clients_handler(void *arg) {
 
             args->products = rand_r(&seed) % (p+1); 
 
-            fprintf(stderr, "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ %d\n", args->products);           
+            //fprintf(stderr, "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ %d\n", args->products);           
             pthread_create(&client_thread, NULL, client, (void*)args);
 
             pthread_detach(client_thread);
@@ -105,7 +106,7 @@ void *clients_handler(void *arg) {
          * handles clients with 0 products
          */
         while (!fifo_tsqueue_isempty(zero_products_q)) {
-            fprintf(stderr, "bbbbbbbbbbbbbbbbbbbb director exiting client with 0 product");
+            //fprintf(stderr, "bbbbbbbbbbbbbbbbbbbb director exiting client with 0 product");
             channel = fifo_tsqueue_pop(&zero_products_q);
             message = D_EXIT_MESSAGE;
 
@@ -120,10 +121,20 @@ void *clients_handler(void *arg) {
                 director_cond_wait(&dir_buff_empty, &dir_buff_lock);
             }
 
-            fifo_tsqueue_push(&clients_info_q, (void*)dir_buff, sizeof(dir_buff));
+            fifo_tsqueue_push(&clients_info_q, (void*)&dir_buff, sizeof(dir_buff));
+            
+            fprintf(
+                stderr,
+                "%-5d\t%-5ld\t%-5ld\t%-5d\t%-5d\n", 
+                dir_buff.id, dir_buff.sm_time, dir_buff.q_time, dir_buff.q_viewed, dir_buff.n_products
+            );
 
             dir_buff_is_empty = 1;
             director_mutex_unlock(&dir_buff_lock);
+
+            director_mutex_lock(&n_clients_lock);
+            n_total_clients += 1;
+            director_mutex_unlock(&n_clients_lock);
         }
     }
 
@@ -226,9 +237,9 @@ void *cashiers_handler(void *arg) {
          */
         director_mutex_lock(analytics_q.mutex);
         while(ISEMPTY(analytics_q) && !quit) {
-            fprintf(stderr, "analytics_q is empty\n");
+            //fprintf(stderr, "analytics_q is empty\n");
             director_cond_wait(analytics_q.empty, analytics_q.mutex);
-            fprintf(stderr, "director waked up by cashier\n");
+            //fprintf(stderr, "director waked up by cashier\n");
         }
         director_mutex_unlock(analytics_q.mutex);
 
@@ -238,7 +249,7 @@ void *cashiers_handler(void *arg) {
     
         data = (struct analytics_data *)fifo_tsqueue_pop(&analytics_q);
 
-        fprintf(stderr, "aaaaaaaaaaaaaaaaaaaaaaaaaaa director received data from cashier %d n clients %d\n", data->id, data->n_clients);
+        //fprintf(stderr, "aaaaaaaaaaaaaaaaaaaaaaaaaaa director received data from cashier %d n clients %d\n", data->id, data->n_clients);
 
         
         if (data->n_clients <= 1) {
@@ -267,7 +278,7 @@ void *cashiers_handler(void *arg) {
             }
             i--;
 
-            fprintf(stderr, "==========================> closing cashier %d\n", i);
+            //fprintf(stderr, "==========================> closing cashier %d\n", i);
             pthread_mutex_lock(&state_lock[i]);
             state[i] = 0;
             pthread_cond_signal(cash_q[i].empty);
@@ -292,7 +303,7 @@ void *cashiers_handler(void *arg) {
             }
             i--;
 
-            fprintf(stderr, "==========================> opening cashier %d\n", i);
+            //fprintf(stderr, "==========================> opening cashier %d\n", i);
             pthread_mutex_lock(&state_lock[i]);
             state[i] = 1;
             pthread_mutex_unlock(&state_lock[i]);
@@ -365,6 +376,12 @@ void *director(void *arg) {
     int analytics_time  = ((struct director_args *)arg)->analytics_t_intervall;
     int s1              = ((struct director_args *)arg)->s1;
     int s2              = ((struct director_args *)arg)->s2;
+    char *log_file_name  = ((struct director_args *)arg)->log_file_name;
+
+    char *string = (char*)malloc(1024*sizeof(char));
+    FILE *log_file;
+    client_info *c_info;
+    int tmp;
 
     quit = 0;
     closing = 0;
@@ -412,6 +429,77 @@ void *director(void *arg) {
 
     free(ca_h_args);
     free(cl_h_args);
+    
+    fprintf(stderr, "n clients %d\nn products %d", n_total_clients, n_total_products);
+
+    /**
+     * writing log file
+     */
+    log_file = fopen(log_file_name, "w");
+
+    // writing total clients
+    sprintf(string, "tot_clients %d\n", n_total_clients);
+    fwrite(string, sizeof(char), strlen(string), log_file);
+
+    // writing total products
+    sprintf(string, "tot_products %d\n", n_total_products);
+    fwrite(string, sizeof(char), strlen(string), log_file);
+
+    // writing clients informations
+    while ((c_info = (client_info*)fifo_tsqueue_pop(&clients_info_q)) != NULL) {
+        
+        sprintf(
+            string, 
+            "client %d %ld %ld %d %d\n", 
+            c_info->id, c_info->sm_time, c_info->q_time, c_info->q_viewed, c_info->n_products
+        );
+        fwrite(string, sizeof(char), strlen(string), log_file);
+    }
+
+    // writing cashiers informations
+    for (int i = 0; i<k; i++) {
+        sprintf(
+            string, 
+            "cash %d %d %d\n", 
+            i, cashiers_info[i].n_clients, cashiers_info[i].n_closings
+        );
+        fwrite(string, sizeof(char), strlen(string), log_file);
+
+
+
+        fwrite("clients_time: ", sizeof(char), 14, log_file);
+        
+        tmp = next(cashiers_info[i].time_per_client);
+        sprintf(string, "%d", tmp);
+        fwrite(string, sizeof(char), strlen(string), log_file);
+        tmp = next(NULL);
+        
+        while(tmp >= 0) {
+            sprintf(string, ",%d", tmp);
+            fwrite(string, sizeof(char), strlen(string), log_file);
+            tmp = next(NULL);
+        }
+        fwrite("\n", sizeof(char), 1, log_file);
+
+
+        
+        fwrite("openings_time: ", sizeof(char), 15, log_file);
+
+        tmp = next(cashiers_info[i].time_per_operiod);
+        sprintf(string, "%d", tmp);
+        fwrite(string, sizeof(char), strlen(string), log_file);
+        tmp = next(NULL);
+        
+        while(tmp >= 0) {
+            sprintf(string, ",%d", tmp);
+            fwrite(string, sizeof(char), strlen(string), log_file);
+            tmp = next(NULL);
+        }
+        fwrite("\n", sizeof(char), 1, log_file);
+
+    }
+
+    fclose(log_file);
 
     cashier_thread_clear(k,c);
     client_thread_clear();

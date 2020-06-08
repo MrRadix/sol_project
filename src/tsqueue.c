@@ -57,14 +57,14 @@ int fifo_tsqueue_isempty(fifo_tsqueue_t queue) {
 
 int fifo_tsqueue_push(fifo_tsqueue_t *queue, void *el, size_t size) {
 
-    fprintf(stderr, "inside push function\n");
+    //fprintf(stderr, "inside push function\n");
 
     if (pthread_mutex_lock(queue->mutex) != 0) {
         perror("tsqueue error during mutex locking");
         return -1;
     }
 
-    fprintf(stderr, "alksjdalskjalksjalskdj\n");
+    //fprintf(stderr, "alksjdalskjalksjalskdj\n");
 
     if (ISEMPTY((*queue))) {
         queue->head = (ts_queue_el *)malloc(sizeof(ts_queue_el));
@@ -103,10 +103,10 @@ void *fifo_tsqueue_pop(fifo_tsqueue_t *queue) {
     void *ret;
     ts_queue_el *tmp;
 
-    fprintf(stderr, "inside pop function %d\n", (queue->head == NULL));
+    //fprintf(stderr, "inside pop function %d\n", (queue->head == NULL));
     // checks if queue is empty
     if (fifo_tsqueue_isempty(*queue)) {
-        fprintf(stderr, "inside pop function if %d\n", (queue->n_elements == 0));
+        //fprintf(stderr, "inside pop function if %d\n", (queue->n_elements == 0));
 
         return NULL;
     }

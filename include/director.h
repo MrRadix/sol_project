@@ -3,6 +3,7 @@
 
 
 struct director_args {
+    char *log_file_name;
     int n_clients;          // C
     int n_cashiers;         // K
     int n_client_group;     // E

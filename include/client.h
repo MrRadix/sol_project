@@ -17,7 +17,7 @@ void *client(void *arg);
  * buffer of 1 position where clients store 
  * their informations for director
  */
-client_data *dir_buff;
+client_info dir_buff;
 int dir_buff_is_empty;
 pthread_mutex_t dir_buff_lock;
 pthread_cond_t dir_buff_empty;

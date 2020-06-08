@@ -7,12 +7,12 @@
 #include <unistd.h>
 #include <string.h>
 
-#define K 100         // cashers number
-#define INITKN 99     // initial cashiers number INITKN > 0
-#define C 500        // customers number
-#define E 100          // customers every group 0 < E < C
+#define K 10        // cashers number
+#define INITKN 1     // initial cashiers number INITKN > 0
+#define C 100        // customers number
+#define E 1          // customers every group 0 < E < C
 #define T 11            // max time for purchases in milliseconds T > 10
-#define P 20           // max number of product for each customer P > 0
+#define P 2           // max number of product for each customer P > 0
 
 /**
  * time in milliseconds to process every product
@@ -20,7 +20,7 @@
 #define PRODTIME 50
 
 #define ANALYTICS_INTERVAL 100
-
+#define LOG_FILE_NAME "out.log"
 
 void quit_handler(int signo) {
     quit = 1;
@@ -78,6 +78,8 @@ int main(int argc, char const *argv[])
     set_sig_handler();
 
     struct director_args *d_args = (struct director_args *)malloc(sizeof(struct director_args));
+    d_args->log_file_name = (char*)malloc(strlen(LOG_FILE_NAME)*sizeof(char));
+    memcpy(d_args->log_file_name, LOG_FILE_NAME, strlen(LOG_FILE_NAME));
     d_args->client_max_time = T;
     d_args->def_cashiers_number = INITKN;
     d_args->n_cashiers = K;

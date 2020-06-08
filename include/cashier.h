@@ -36,13 +36,13 @@ struct cashier_info {
 /**
  * client info to write in log file
  */
-typedef struct _client_data {
+typedef struct _client_info {
     int id;
     int n_products;     // number of products purchased
     long sm_time;     // time spent inside supermarket in milliseconds
     long q_time;      // time spent in queue in milliseconds
     int q_viewed;       // number of queue viewed
-} client_data;
+} client_info;
 
 /**
  * each cell of array correspond to a cashier id
@@ -62,7 +62,7 @@ pthread_mutex_t *state_lock;
 /**
  * comunication buffer between cashier and customer
  */
-client_data *buff;
+client_info *buff;
 
 int *buff_is_empty;
 pthread_mutex_t *buff_lock;
@@ -101,6 +101,15 @@ pthread_mutex_t cashiers_info_lock;
 pthread_mutex_t clients_inside_lock;
 pthread_cond_t max_clients_inside;
 int clients_inside;
+
+/**
+ * count total products purchased
+ */
+int n_total_products;
+pthread_mutex_t n_prod_lock;
+
+int n_total_clients;
+pthread_mutex_t n_clients_lock;
 
 
 /**

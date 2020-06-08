@@ -63,11 +63,11 @@ void *send_analytics(void *arg) {
 
     while (!quit && open) {
 
-        fprintf(stderr, "locking clients_inside_lock\n");
+        //fprintf(stderr, "locking clients_inside_lock\n");
         cashier_mutex_lock(&clients_inside_lock);
         remaining_clients = clients_inside;
 
-        fprintf(stderr, "unlocking clients_inside_lock\n");
+        //fprintf(stderr, "unlocking clients_inside_lock\n");
         cashier_mutex_unlock(&clients_inside_lock);
         
         if (closing && remaining_clients == 0) {
@@ -86,11 +86,11 @@ void *send_analytics(void *arg) {
         
         free(data);
         
-        fprintf(stderr, "locking state_lock\n");
+        //fprintf(stderr, "locking state_lock\n");
         cashier_mutex_lock(&state_lock[id]);
         open = state[id];
 
-        fprintf(stderr, "unlocking state_lock\n");
+        //fprintf(stderr, "unlocking state_lock\n");
         cashier_mutex_unlock(&state_lock[id]);
 
     }
@@ -99,7 +99,7 @@ void *send_analytics(void *arg) {
     free(rem);
     free(arg);
     
-    fprintf(stderr, "analytics queue with %d elements\n", fifo_tsqueue_n_items(analytics_q));
+    //fprintf(stderr, "analytics queue with %d elements\n", fifo_tsqueue_n_items(analytics_q));
 
     pthread_exit((void*)EXIT_SUCCESS);
 }
@@ -181,7 +181,7 @@ void *cashier(void *arg) {
         //fprintf(stderr, "cahsier %d queue is empty before while: %d\n", id, ISEMPTY(cash_q[id]));
 
         while (ISEMPTY(cash_q[id])) {
-            fprintf(stderr, "cashier %d waiting for someone in queue\n", id);
+            //fprintf(stderr, "cashier %d waiting for someone in queue\n", id);
             cashier_mutex_lock(&state_lock[id]);
             open = state[id];
             cashier_mutex_unlock(&state_lock[id]);
@@ -237,9 +237,19 @@ void *cashier(void *arg) {
             //fprintf(stderr, "=========> cashier %d waked up\n", id);
         }
 
+        fprintf(
+            stderr,
+            "%-5d\t%-5ld\t%-5ld\t%-5d\t%-5d\n", 
+            buff[id].id, buff[id].sm_time, buff[id].q_time, buff[id].q_viewed, buff[id].n_products
+        );
+
         //fprintf(stderr, "=========> cashier %d sleeping...\n", id);
         // sleeps (simulates cshier products scanning period)
         pass_products(time_per_client+prod_time*buff[id].n_products, id);
+
+        cashier_mutex_lock(&n_prod_lock);
+        n_total_products += buff[id].n_products;
+        cashier_mutex_unlock(&n_prod_lock);
 
         //fprintf(stderr, "=========> cashier %d finished sleeping\n", id);
 
@@ -254,13 +264,16 @@ void *cashier(void *arg) {
         cashier_mutex_unlock(&buff_lock[id]);
 
         timersub(&client_time_stop, &client_time_start, &client_time_result);
-        client_time = (client_time_result.tv_sec*1000 + client_time_result.tv_usec)/1000;
+        client_time = (client_time_result.tv_sec*1000000 + client_time_result.tv_usec)/1000;
 
         cashier_mutex_lock(&cashiers_info_lock);
         cashiers_info[id].n_clients += 1;
         add(&(cashiers_info[id].time_per_client), client_time);
         cashier_mutex_unlock(&cashiers_info_lock);
 
+        cashier_mutex_lock(&n_clients_lock);
+        n_total_clients += 1;
+        cashier_mutex_unlock(&n_clients_lock);
 
 
         cashier_mutex_lock(&state_lock[id]);
@@ -274,7 +287,7 @@ void *cashier(void *arg) {
     is_empty = fifo_tsqueue_isempty(cash_q[id]);
     while(!is_empty && is_empty >= 0) {
         
-        fprintf(stderr, "cahsier %d sending closing message\n", id);
+        //fprintf(stderr, "cahsier %d sending closing message\n", id);
 
         p = fifo_tsqueue_pop(&cash_q[id]);
         if (p == NULL) {
@@ -301,10 +314,10 @@ void *cashier(void *arg) {
 
     pthread_join(analytics_thread, NULL);
 
-    fprintf(stderr, "------------closing cashier: %d-------------\n", id);
+    //fprintf(stderr, "------------closing cashier: %d-------------\n", id);
 
     cashier_mutex_lock(&clients_inside_lock);
-    fprintf(stderr, "clients inside %d", clients_inside);
+    //fprintf(stderr, "clients inside %d", clients_inside);
     cashier_mutex_unlock(&clients_inside_lock);
 
     cashier_mutex_lock(&state_lock[id]);
@@ -314,7 +327,7 @@ void *cashier(void *arg) {
     // calculating opning time
     gettimeofday(&opening_stop, NULL);
     timersub(&opening_stop, &opening_start, &opening_result);
-    opening_time = (opening_result.tv_sec*1000 + opening_result.tv_usec)/1000;
+    opening_time = (opening_result.tv_sec*1000000 + opening_result.tv_usec)/1000;
 
     // adding closing time to cashier info
     cashier_mutex_lock(&cashiers_info_lock);
@@ -399,9 +412,9 @@ void cashier_thread_init(int n_cashiers, int n_clients) {
     cash_lock_init(&state_lock, n_cashiers);
     cash_lock_init(&buff_lock, n_cashiers);
     cash_cond_init(&buff_empty, n_cashiers);
-    cash_state_init(&buff_is_empty, n_cashiers, 0);
+    cash_state_init(&buff_is_empty, n_cashiers, 1);
     cash_state_init(&state, n_cashiers, 0);
-    buff = (client_data *)malloc(n_cashiers*sizeof(client_data));
+    buff = (client_info *)malloc(n_cashiers*sizeof(client_info));
 
     cashiers_info_init(&cashiers_info, n_cashiers);
     pthread_mutex_init(&cashiers_info_lock, NULL);
@@ -409,6 +422,12 @@ void cashier_thread_init(int n_cashiers, int n_clients) {
     pthread_mutex_init(&clients_inside_lock, NULL);
     pthread_cond_init(&max_clients_inside, NULL);
     clients_inside = 0;
+
+    pthread_mutex_init(&n_prod_lock, NULL);
+    n_total_products = 0;
+
+    pthread_mutex_init(&n_clients_lock, NULL);
+    n_total_clients = 0;
 
     fifo_tsqueue_init(&clients_info_q);
     fifo_tsqueue_init(&analytics_q);

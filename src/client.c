@@ -79,7 +79,7 @@ void client_quit(int cpipe[2], int id) {
 
     client_cond_signal(&max_opened_pipes);
     client_mutex_unlock(&opened_pipes_lock);
-    fprintf(stderr, "---------------------------- client %d finished\n", id);
+    //fprintf(stderr, "---------------------------- client %d finished\n", id);
     pthread_exit((void*)EXIT_SUCCESS);
 
 }
@@ -166,7 +166,7 @@ void *client(void *arg) {
         gettimeofday(&sm_stop, NULL);
         timersub(&sm_stop, &sm_start, &sm_result);
 
-        sm_time = (sm_result.tv_sec*1000 + sm_result.tv_usec)/1000;
+        sm_time = (sm_result.tv_sec*1000000 + sm_result.tv_usec)/1000;
 
         client_mutex_lock(&clients_inside_lock);
         clients_inside--;
@@ -180,11 +180,11 @@ void *client(void *arg) {
         }
 
         client_mutex_lock(&dir_buff_lock);
-        dir_buff->id = id;
-        dir_buff->n_products = products;
-        dir_buff->q_time = 0;
-        dir_buff->q_viewed = 0;
-        dir_buff->sm_time = sm_time;
+        dir_buff.id = id;
+        dir_buff.n_products = products;
+        dir_buff.q_time = 0;
+        dir_buff.q_viewed = 0;
+        dir_buff.sm_time = sm_time;
         
         dir_buff_is_empty = 0;
         client_cond_signal(&dir_buff_empty);
@@ -216,7 +216,7 @@ void *client(void *arg) {
         while (!cashier_open) {
             cashier_id = rand_r(&seed) % (max_cash);
             
-            fprintf(stderr, "client %d trying cahsier %d\n", id, cashier_id);
+            //fprintf(stderr, "client %d trying cahsier %d\n", id, cashier_id);
             client_mutex_lock(&state_lock[cashier_id]);
             cashier_open = state[cashier_id];
             client_mutex_unlock(&state_lock[cashier_id]);
@@ -255,14 +255,14 @@ void *client(void *arg) {
          */
         if (response == CLOSING) {
             cashier_open = 0;
-            fprintf(stderr, "client %d received closing message from cashier %d\n", id, cashier_id);
+            //fprintf(stderr, "client %d received closing message from cashier %d\n", id, cashier_id);
             continue;
         }
 
         exit_queue = 1;
     }
 
-    fprintf(stderr, "----------- client %d sending all data to cashier %d\n", id, cashier_id);
+    //fprintf(stderr, "----------- client %d sending all data to cashier %d\n", id, cashier_id);
     
     gettimeofday(&queue_stop, NULL);
     gettimeofday(&sm_stop, NULL);
@@ -285,6 +285,14 @@ void *client(void *arg) {
 
     buff_is_empty[cashier_id] = 0;
 
+    /*
+    fprintf(
+        stderr,
+        "%-5d\t%-5ld\t%-5ld\t%-5d\t%-5d\n", 
+        buff[cashier_id].id, buff[cashier_id].sm_time, buff[cashier_id].q_time, buff[cashier_id].q_viewed, buff[cashier_id].n_products
+    );
+    */
+
     client_cond_signal(&buff_empty[cashier_id]);
     client_mutex_unlock(&buff_lock[cashier_id]);
 
@@ -302,7 +310,7 @@ void client_thread_init() {
 
     fifo_tsqueue_init(&zero_products_q);
 
-    dir_buff = (client_data *)malloc(sizeof(client_data));
+    //dir_buff = (client_info *)malloc(sizeof(client_info));
     dir_buff_is_empty = 1;
     pthread_mutex_init(&dir_buff_lock, NULL);
     pthread_cond_init(&dir_buff_empty, NULL);
@@ -314,5 +322,5 @@ void client_thread_init() {
 void client_thread_clear() {
 
     fifo_tsqueue_destroy(&zero_products_q);
-    free(dir_buff);
+    //free(dir_buff);
 }
