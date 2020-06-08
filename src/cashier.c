@@ -62,7 +62,8 @@ void *send_analytics(void *arg) {
 
 
     while (!quit && open) {
-
+        
+        /*
         //fprintf(stderr, "locking clients_inside_lock\n");
         cashier_mutex_lock(&clients_inside_lock);
         remaining_clients = clients_inside;
@@ -73,6 +74,7 @@ void *send_analytics(void *arg) {
         if (closing && remaining_clients == 0) {
             break;
         }
+        */
 
         if (nanosleep(res, rem) == -1) {
             nanosleep(rem, NULL);
@@ -162,11 +164,15 @@ void *cashier(void *arg) {
     a_args->msec = analytics_time;
     pthread_create(&analytics_thread, NULL, send_analytics, (void*)a_args);
 
-    //fprintf(stderr, "------------opening cashier: %d-------------\n", id);
+    fprintf(stderr, "------------opening cashier: %d-------------\n", id);
 
     cashier_mutex_lock(&state_lock[id]);
     open = state[id];
     cashier_mutex_unlock(&state_lock[id]);
+
+    cashier_mutex_lock(&open_cashiers_lock);
+    n_open_cashiers += 1;
+    cashier_mutex_unlock(&open_cashiers_lock);
 
     // starts count time of opening
     gettimeofday(&opening_start, NULL);
@@ -237,11 +243,13 @@ void *cashier(void *arg) {
             //fprintf(stderr, "=========> cashier %d waked up\n", id);
         }
 
+        /*
         fprintf(
             stderr,
             "%-5d\t%-5ld\t%-5ld\t%-5d\t%-5d\n", 
             buff[id].id, buff[id].sm_time, buff[id].q_time, buff[id].q_viewed, buff[id].n_products
         );
+        */
 
         //fprintf(stderr, "=========> cashier %d sleeping...\n", id);
         // sleeps (simulates cshier products scanning period)
@@ -314,7 +322,7 @@ void *cashier(void *arg) {
 
     pthread_join(analytics_thread, NULL);
 
-    //fprintf(stderr, "------------closing cashier: %d-------------\n", id);
+    fprintf(stderr, "------------closing cashier: %d-------------\n", id);
 
     cashier_mutex_lock(&clients_inside_lock);
     //fprintf(stderr, "clients inside %d", clients_inside);
@@ -334,6 +342,10 @@ void *cashier(void *arg) {
     cashiers_info[id].n_closings += 1;
     add(&(cashiers_info[id].time_per_operiod), opening_time);
     cashier_mutex_unlock(&cashiers_info_lock);
+
+    cashier_mutex_lock(&open_cashiers_lock);
+    n_open_cashiers -= 1;
+    cashier_mutex_unlock(&open_cashiers_lock);
 
     pthread_exit((void*)EXIT_SUCCESS);
 }
@@ -428,6 +440,9 @@ void cashier_thread_init(int n_cashiers, int n_clients) {
 
     pthread_mutex_init(&n_clients_lock, NULL);
     n_total_clients = 0;
+
+    pthread_mutex_init(&open_cashiers_lock, NULL);
+    n_open_cashiers = 0;
 
     fifo_tsqueue_init(&clients_info_q);
     fifo_tsqueue_init(&analytics_q);

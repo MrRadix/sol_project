@@ -123,11 +123,13 @@ void *clients_handler(void *arg) {
 
             fifo_tsqueue_push(&clients_info_q, (void*)&dir_buff, sizeof(dir_buff));
             
+            /*
             fprintf(
                 stderr,
                 "%-5d\t%-5ld\t%-5ld\t%-5d\t%-5d\n", 
                 dir_buff.id, dir_buff.sm_time, dir_buff.q_time, dir_buff.q_viewed, dir_buff.n_products
             );
+            */
 
             dir_buff_is_empty = 1;
             director_mutex_unlock(&dir_buff_lock);
@@ -189,8 +191,9 @@ void *cashiers_handler(void *arg) {
     struct analytics_data *data;
 
     struct cashier_args *ca_args;
-    pthread_t cashier_thread;
     unsigned int seed = time(NULL) ^ s1 ^ s2;
+
+    pthread_t *cashiers_thread  = (pthread_t *)malloc(k*sizeof(pthread_t));
     
     /**
      * auxiliary variable for checking if a cashier is open
@@ -217,11 +220,10 @@ void *cashiers_handler(void *arg) {
         ca_args->analytics_time = analytics_time;
         ca_args->prod_time = prod_time;
 
-        pthread_create(&cashier_thread, NULL, cashier, (void *)ca_args);
-        pthread_detach(cashier_thread);
+        pthread_create(&cashiers_thread[i], NULL, cashier, (void *)ca_args);
+        //pthread_detach(cashiers_thread[i]); 
     }
 
-    //pthread_join(cashier_thread, NULL);
     while (!quit) {
 
         director_mutex_lock(&clients_inside_lock);
@@ -248,6 +250,8 @@ void *cashiers_handler(void *arg) {
         }
     
         data = (struct analytics_data *)fifo_tsqueue_pop(&analytics_q);
+
+        //fprintf(stderr, "%d %d\n", data->id, data->n_clients);
 
         //fprintf(stderr, "aaaaaaaaaaaaaaaaaaaaaaaaaaa director received data from cashier %d n clients %d\n", data->id, data->n_clients);
 
@@ -278,13 +282,15 @@ void *cashiers_handler(void *arg) {
             }
             i--;
 
-            //fprintf(stderr, "==========================> closing cashier %d\n", i);
+            fprintf(stderr, "==========================> closing cashier %d\n", i);
             pthread_mutex_lock(&state_lock[i]);
             state[i] = 0;
             pthread_cond_signal(cash_q[i].empty);
             pthread_mutex_unlock(&state_lock[i]);
 
             open_cashiers--;
+
+            pthread_join(cashiers_thread[i], NULL);
         }
 
         /** 
@@ -316,9 +322,8 @@ void *cashiers_handler(void *arg) {
             ca_args->analytics_time = analytics_time;
             ca_args->prod_time = prod_time;
 
-            pthread_create(&cashier_thread, NULL, cashier, (void*)ca_args);
-
-            pthread_detach(cashier_thread);   
+            pthread_create(&cashiers_thread[i], NULL, cashier, (void*)ca_args);
+            //pthread_detach(cashiers_thread[i]);   
         }
 
         free(data);
@@ -331,6 +336,7 @@ void *cashiers_handler(void *arg) {
         pthread_mutex_unlock(&state_lock[i]);
 
         if (cashier_open) {
+            fprintf(stderr, "==========================> closing cashier %d\n", i);
             pthread_mutex_lock(&state_lock[i]);
             state[i] = 0;
             pthread_mutex_unlock(&state_lock[i]);
@@ -339,23 +345,17 @@ void *cashiers_handler(void *arg) {
     }
 
     // waits for closing of all cashiers
-    open_cashiers = 1;
+    director_mutex_lock(&open_cashiers_lock);
+    open_cashiers = n_open_cashiers;
+    director_mutex_unlock(&open_cashiers_lock);
     while (open_cashiers > 0) {
+        sched_yield();
 
-        for (i = 0; i<k; i++) {
-            if (state[i] == 1) {
-                open_cashiers = 1;
-                fprintf(stderr, "%d ", i);
-                break;
-            }
-        }
-        fprintf(stderr, "\n");
-        if (i == k) {
-            open_cashiers = 0;
-        } else {
-            sched_yield();
-        }
+        director_mutex_lock(&open_cashiers_lock);
+        open_cashiers = n_open_cashiers;
+        director_mutex_unlock(&open_cashiers_lock);
     }
+    
 
     fprintf(stderr, "director cashier handler finished\n\n");
 
@@ -470,8 +470,12 @@ void *director(void *arg) {
         fwrite("clients_time: ", sizeof(char), 14, log_file);
         
         tmp = next(cashiers_info[i].time_per_client);
-        sprintf(string, "%d", tmp);
-        fwrite(string, sizeof(char), strlen(string), log_file);
+        if (tmp >= 0) {
+            sprintf(string, "%d", tmp);
+            fwrite(string, sizeof(char), strlen(string), log_file);
+        } else {
+            fwrite("null", sizeof(char), 4, log_file);
+        }
         tmp = next(NULL);
         
         while(tmp >= 0) {
@@ -486,8 +490,12 @@ void *director(void *arg) {
         fwrite("openings_time: ", sizeof(char), 15, log_file);
 
         tmp = next(cashiers_info[i].time_per_operiod);
-        sprintf(string, "%d", tmp);
-        fwrite(string, sizeof(char), strlen(string), log_file);
+        if (tmp >= 0) {
+            sprintf(string, "%d", tmp);
+            fwrite(string, sizeof(char), strlen(string), log_file);
+        } else {
+            fwrite("null", sizeof(char), 4, log_file);
+        }
         tmp = next(NULL);
         
         while(tmp >= 0) {

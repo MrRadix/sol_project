@@ -7,12 +7,12 @@
 #include <unistd.h>
 #include <string.h>
 
-#define K 10        // cashers number
+#define K 500        // cashers number
 #define INITKN 1     // initial cashiers number INITKN > 0
 #define C 100        // customers number
 #define E 1          // customers every group 0 < E < C
 #define T 11            // max time for purchases in milliseconds T > 10
-#define P 2           // max number of product for each customer P > 0
+#define P 20           // max number of product for each customer P > 0
 
 /**
  * time in milliseconds to process every product
