@@ -269,15 +269,19 @@ void *cashier(void *arg) {
 
         gettimeofday(&client_time_stop, NULL); // stop counting time for client
 
-        cashier_mutex_unlock(&buff_lock[id]);
-
         timersub(&client_time_stop, &client_time_start, &client_time_result);
         client_time = (client_time_result.tv_sec*1000000 + client_time_result.tv_usec)/1000;
 
+        /**
+         * updating cashier info
+         */
         cashier_mutex_lock(&cashiers_info_lock);
         cashiers_info[id].n_clients += 1;
+        cashiers_info[id].n_products += buff[id].n_products; 
         add(&(cashiers_info[id].time_per_client), client_time);
         cashier_mutex_unlock(&cashiers_info_lock);
+
+        cashier_mutex_unlock(&buff_lock[id]);
 
         cashier_mutex_lock(&n_clients_lock);
         n_total_clients += 1;
@@ -375,6 +379,7 @@ static void cashiers_info_init(struct cashier_info **cinfo, int dim) {
 
     for (int i = 0; i<dim; i++) {
         (*cinfo)[i].n_clients = 0;
+        (*cinfo)[i].n_products = 0;
         (*cinfo)[i].n_closings = 0;
         (*cinfo)[i].time_per_operiod = NULL;
         (*cinfo)[i].time_per_client = NULL;

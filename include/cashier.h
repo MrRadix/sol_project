@@ -28,6 +28,7 @@ struct cashier_args {
  */
 struct cashier_info {
     int n_clients;              // number of served clients
+    int n_products;
     int n_closings;             // number of closings
     int_list_node *time_per_operiod;   // time for all opening periods
     int_list_node *time_per_client;    // time of service of every client served
