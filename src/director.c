@@ -63,8 +63,8 @@ void *clients_handler(void *arg) {
          * waits if clients inside supermarket are more than c-e
          */
         director_mutex_lock(&clients_inside_lock);
+        //fprintf(stderr, "clients inside: %d\n", clients_inside);
         while (clients_inside >= c-e && !closing && !quit) {
-            //fprintf(stderr, "inside while: %d\n", clients_inside);
             director_cond_wait(&max_clients_inside, &clients_inside_lock);
             //fprintf(stderr, "waked up director by client\n");
         }
@@ -282,7 +282,7 @@ void *cashiers_handler(void *arg) {
             }
             i--;
 
-            fprintf(stderr, "==========================> closing cashier %d\n", i);
+            //fprintf(stderr, "==========================> closing cashier %d\n", i);
             pthread_mutex_lock(&state_lock[i]);
             state[i] = 0;
             pthread_cond_signal(cash_q[i].empty);
@@ -336,7 +336,7 @@ void *cashiers_handler(void *arg) {
         pthread_mutex_unlock(&state_lock[i]);
 
         if (cashier_open) {
-            fprintf(stderr, "==========================> closing cashier %d\n", i);
+            //fprintf(stderr, "==========================> closing cashier %d\n", i);
             pthread_mutex_lock(&state_lock[i]);
             state[i] = 0;
             pthread_mutex_unlock(&state_lock[i]);
@@ -357,7 +357,7 @@ void *cashiers_handler(void *arg) {
     }
     
 
-    fprintf(stderr, "director cashier handler finished\n\n");
+    //fprintf(stderr, "director cashier handler finished\n\n");
 
     free(one_client);
 
@@ -430,12 +430,22 @@ void *director(void *arg) {
     free(ca_h_args);
     free(cl_h_args);
     
-    fprintf(stderr, "n clients %d\nn products %d", n_total_clients, n_total_products);
+    //fprintf(stderr, "n clients %d\nn products %d", n_total_clients, n_total_products);
 
     /**
      * writing log file
      */
     log_file = fopen(log_file_name, "w");
+
+    fwrite(
+        "# client id supermarket_time queue_time queue_viewed n_products\n",
+        sizeof(char), 64, log_file
+    );
+
+    fwrite(
+        "# cash id n_clients n_closings\n\n",
+        sizeof(char), 32, log_file
+    );
 
     // writing total clients
     sprintf(string, "tot_clients %d\n", n_total_clients);
@@ -513,12 +523,12 @@ void *director(void *arg) {
     client_thread_clear();
 
     /**
-     * TODO: check if arguments from config file are valid
+     * done TODO: check if arguments from config file are valid
      * done TODO: start cashiers
      * done TODO: start clients
      * done TODO: hanlde clients with 0 products
      * done TODO: get client information from cashiers
-     * TODO: write log file at the end
+     * done TODO: write log file at the end
      * done TODO: closing and opening cashes in base of s1 and s2 parameters
      * done TODO: get cashier information when it closes
      * done TODO: quit safely when quit = 1

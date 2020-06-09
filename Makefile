@@ -16,7 +16,9 @@ LIBS 		= -ltsqueue -lpthread -lllist
 TARGET = $(BINDIR)/supermarket
 TEST_LLIST = $(BINDIR)/linkedlist_test
 
-.PHONY: all clean test2 tests
+CONFIG_FILE = config/config.txt
+
+.PHONY: all clean test
 
 all: $(TARGET)
 
@@ -56,4 +58,33 @@ clean:
 	rm build/*
 	rm lib/*
 	rm bin/*
+
+test:
+	@echo [+] Generating config file in $(CONFIG_FILE)
+	@echo K 6 > $(CONFIG_FILE)
+	@echo C 50 >> $(CONFIG_FILE)
+	@echo E 3 >> $(CONFIG_FILE)
+	@echo T 200 >> $(CONFIG_FILE)
+	@echo P 100 >> $(CONFIG_FILE)
+	@echo INITKN 3 >> $(CONFIG_FILE)
+	@echo PRODTIME 20 >> $(CONFIG_FILE)
+	@echo ANALYTICS_T 2000 >> $(CONFIG_FILE)
+	@echo LOG_FN test_out >> $(CONFIG_FILE)
+	@echo S1 2 >> $(CONFIG_FILE)
+	@echo S2 10 >> $(CONFIG_FILE)
+
+	@echo [+] Launching supermarket process
+	@$(BINDIR)/supermarket & echo $$! > sm.PID
+	@echo [+] Supermarket process is running
+	@sleep 25
+
+	@if [ -e sm.PID ]; then \
+		echo [+] sending SIGHUP to supermarket process...; \
+		kill -1 $$(cat sm.PID) || true; \
+		echo [+] waiting for supermarket process to close...; \
+		while sleep 1; do ps -p $$(cat sm.PID) 1>/dev/null || break; done; \
+	fi;
+
+	@rm sm.PID
+
 

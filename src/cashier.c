@@ -164,7 +164,7 @@ void *cashier(void *arg) {
     a_args->msec = analytics_time;
     pthread_create(&analytics_thread, NULL, send_analytics, (void*)a_args);
 
-    fprintf(stderr, "------------opening cashier: %d-------------\n", id);
+    //fprintf(stderr, "------------opening cashier: %d-------------\n", id);
 
     cashier_mutex_lock(&state_lock[id]);
     open = state[id];
@@ -322,7 +322,7 @@ void *cashier(void *arg) {
 
     pthread_join(analytics_thread, NULL);
 
-    fprintf(stderr, "------------closing cashier: %d-------------\n", id);
+    //fprintf(stderr, "------------closing cashier: %d-------------\n", id);
 
     cashier_mutex_lock(&clients_inside_lock);
     //fprintf(stderr, "clients inside %d", clients_inside);
