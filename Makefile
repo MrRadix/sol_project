@@ -17,6 +17,7 @@ TARGET = $(BINDIR)/supermarket
 TEST_LLIST = $(BINDIR)/linkedlist_test
 
 CONFIG_FILE = config/config.txt
+LOG_FN = test_out.log
 
 .PHONY: all clean test
 
@@ -60,7 +61,7 @@ clean:
 	rm bin/*
 
 test:
-	@echo [+] Generating config file in $(CONFIG_FILE)
+	@echo [+] Generating config file in $(CONFIG_FILE)...
 	@echo K 6 > $(CONFIG_FILE)
 	@echo C 50 >> $(CONFIG_FILE)
 	@echo E 3 >> $(CONFIG_FILE)
@@ -69,11 +70,11 @@ test:
 	@echo INITKN 3 >> $(CONFIG_FILE)
 	@echo PRODTIME 20 >> $(CONFIG_FILE)
 	@echo ANALYTICS_T 2000 >> $(CONFIG_FILE)
-	@echo LOG_FN test_out >> $(CONFIG_FILE)
+	@echo LOG_FN $(LOG_FN) >> $(CONFIG_FILE)
 	@echo S1 2 >> $(CONFIG_FILE)
 	@echo S2 10 >> $(CONFIG_FILE)
 
-	@echo [+] Launching supermarket process
+	@echo [+] Launching supermarket process...
 	@$(BINDIR)/supermarket & echo $$! > sm.PID
 	@echo [+] Supermarket process is running
 	@sleep 25
@@ -86,5 +87,8 @@ test:
 	fi;
 
 	@rm sm.PID
+	@echo
+	@echo
+	@./analisi.sh $(LOG_FN)
 
 
