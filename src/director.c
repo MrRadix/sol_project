@@ -443,8 +443,8 @@ void *director(void *arg) {
     );
 
     fwrite(
-        "# cash id n_clients n_closings\n\n",
-        sizeof(char), 32, log_file
+        "# cash id n_products n_clients n_closings time_forall_clients time_forall_openings\n\n",
+        sizeof(char), 84, log_file
     );
 
     // writing total clients
@@ -470,14 +470,12 @@ void *director(void *arg) {
     for (int i = 0; i<k; i++) {
         sprintf(
             string, 
-            "cash %d %d %d\n", 
-            i, cashiers_info[i].n_clients, cashiers_info[i].n_closings
+            "cash %d %d %d %d ", 
+            i, cashiers_info[i].n_products, cashiers_info[i].n_clients, cashiers_info[i].n_closings
         );
         fwrite(string, sizeof(char), strlen(string), log_file);
 
 
-
-        fwrite("clients_time: ", sizeof(char), 14, log_file);
         
         tmp = next(cashiers_info[i].time_per_client);
         if (tmp >= 0) {
@@ -493,11 +491,9 @@ void *director(void *arg) {
             fwrite(string, sizeof(char), strlen(string), log_file);
             tmp = next(NULL);
         }
-        fwrite("\n", sizeof(char), 1, log_file);
+        fwrite(" ", sizeof(char), 1, log_file);
 
 
-        
-        fwrite("openings_time: ", sizeof(char), 15, log_file);
 
         tmp = next(cashiers_info[i].time_per_operiod);
         if (tmp >= 0) {
