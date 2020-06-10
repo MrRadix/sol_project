@@ -202,6 +202,11 @@ void *cashiers_handler(void *arg) {
     int cashier_open = 0;
     int i;
 
+    // initializing cahsiers thread array
+    for (i = 0; i < k; i++) {
+        cashiers_thread[i] = -1;
+    }
+
     mask_signals();
 
     for (i = 0; i<def_number; i++) {
@@ -282,11 +287,11 @@ void *cashiers_handler(void *arg) {
             }
             i--;
 
-            //fprintf(stderr, "==========================> closing cashier %d\n", i);
+            fprintf(stderr, "==========================> closing cashier %d\n", i);
             pthread_mutex_lock(&state_lock[i]);
             state[i] = 0;
-            pthread_cond_signal(cash_q[i].empty);
             pthread_mutex_unlock(&state_lock[i]);
+            pthread_cond_signal(cash_q[i].empty);
 
             open_cashiers--;
 
@@ -309,7 +314,7 @@ void *cashiers_handler(void *arg) {
             }
             i--;
 
-            //fprintf(stderr, "==========================> opening cashier %d\n", i);
+            fprintf(stderr, "==========================> opening cashier %d\n", i);
             pthread_mutex_lock(&state_lock[i]);
             state[i] = 1;
             pthread_mutex_unlock(&state_lock[i]);
@@ -329,6 +334,7 @@ void *cashiers_handler(void *arg) {
         free(data);
     }
 
+    fprintf(stderr, "started closing all cashiers\n");
     // signaling all waiting cashiers
     for (i = 0; i < k; i++) {
         pthread_mutex_lock(&state_lock[i]);
@@ -336,28 +342,35 @@ void *cashiers_handler(void *arg) {
         pthread_mutex_unlock(&state_lock[i]);
 
         if (cashier_open) {
-            //fprintf(stderr, "==========================> closing cashier %d\n", i);
+            fprintf(stderr, "==========================> closing cashier %d\n", i);
             pthread_mutex_lock(&state_lock[i]);
             state[i] = 0;
             pthread_mutex_unlock(&state_lock[i]);
             pthread_cond_signal(cash_q[i].empty);
+
+            pthread_join(cashiers_thread[i], NULL);
         }
     }
 
+    /*
     // waits for closing of all cashiers
     director_mutex_lock(&open_cashiers_lock);
     open_cashiers = n_open_cashiers;
     director_mutex_unlock(&open_cashiers_lock);
+    int h = 0;
     while (open_cashiers > 0) {
+        fprintf(stderr, "open cashiers %d, %d", open_cashiers, h);
+        
         sched_yield();
 
         director_mutex_lock(&open_cashiers_lock);
         open_cashiers = n_open_cashiers;
         director_mutex_unlock(&open_cashiers_lock);
     }
+    */
     
 
-    //fprintf(stderr, "director cashier handler finished\n\n");
+    fprintf(stderr, "director cashier handler finished\n\n");
 
     free(one_client);
 

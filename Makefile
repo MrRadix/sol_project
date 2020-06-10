@@ -19,7 +19,7 @@ TEST_LLIST = $(BINDIR)/linkedlist_test
 CONFIG_FILE = config/config.txt
 LOG_FN = test_out.log
 
-.PHONY: all clean test
+.PHONY: all clean test test2
 
 all: $(TARGET)
 
@@ -92,3 +92,33 @@ test:
 	@./analisi.sh $(LOG_FN)
 
 
+test2:
+	@echo [+] Generating config file in $(CONFIG_FILE)...
+	@echo K 3000 > $(CONFIG_FILE)
+	@echo C 1000 >> $(CONFIG_FILE)
+	@echo E 3 >> $(CONFIG_FILE)
+	@echo T 11 >> $(CONFIG_FILE)
+	@echo P 10 >> $(CONFIG_FILE)
+	@echo INITKN 3 >> $(CONFIG_FILE)
+	@echo PRODTIME 20 >> $(CONFIG_FILE)
+	@echo ANALYTICS_T 3000 >> $(CONFIG_FILE)
+	@echo LOG_FN $(LOG_FN) >> $(CONFIG_FILE)
+	@echo S1 50 >> $(CONFIG_FILE)
+	@echo S2 100 >> $(CONFIG_FILE)
+
+	@echo [+] Launching supermarket process...
+	@$(BINDIR)/supermarket & echo $$! > sm.PID
+	@echo [+] Supermarket process is running
+	@sleep 25
+
+	@if [ -e sm.PID ]; then \
+		echo [+] sending SIGHUP to supermarket process...; \
+		kill -1 $$(cat sm.PID) || true; \
+		echo [+] waiting for supermarket process to close...; \
+		while sleep 1; do ps -p $$(cat sm.PID) 1>/dev/null || break; done; \
+	fi;
+
+	@rm sm.PID
+	@echo
+	@echo
+	@./analisi.sh $(LOG_FN)

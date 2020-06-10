@@ -24,22 +24,27 @@ while IFS=' ' read -r t id n_prod n_clients n_closings t_4_clients t_4_openings;
     if [ "$t" != "cash" ]; then
         continue
     fi
-    
 
-    IFS="," read -ra time_clients <<< "$t_4_clients";
-    sum=0
-    for ((i = 0; i < $n_clients; i++)); do
-        sum=$(expr ${time_clients[$i]} + $sum)
-    done
-    service_avg=$(expr $sum / $n_clients)
+    if [ "$n_clients" -eq "0" ]; then
+        service_avg=""
+    else
+        IFS="," read -ra time_clients <<< "$t_4_clients";
+        sum=0
+        for ((i = 0; i < $n_clients; i++)); do
+            sum=$(expr ${time_clients[$i]} + $sum)
+        done
+        service_avg=$(expr $sum / $n_clients)
+    fi
 
-
-    IFS=',' read -ra time_openings <<< "$t_4_openings";
-    open_time=0
-    for ((i = 0; i<$n_closings; i++)); do
-        open_time=$(expr ${time_openings[$i]} + $open_time)
-    done 
-
+    if [ "$n_closings" -eq "0" ]; then
+        open_time=""
+    else
+        IFS=',' read -ra time_openings <<< "$t_4_openings";
+        open_time=0
+        for ((i = 0; i<$n_closings; i++)); do
+            open_time=$(expr ${time_openings[$i]} + $open_time)
+        done
+    fi
     
     printf "| %-15s | %-15s | %-15s | %-15s | %-21s | %-10s |\n" "$id" "$n_prod" "$n_clients" "$open_time" "$service_avg" "$n_closings"
 

@@ -6,6 +6,6 @@ P 100
 INITKN 3
 PRODTIME 20
 ANALYTICS_T 2000
-LOG_FN test_out
+LOG_FN test_out.log
 S1 2
 S2 10
