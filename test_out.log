@@ -1,0 +1,238 @@
+# client id supermarket_time queue_time queue_viewed n_products
+# cash id n_products n_clients n_closings time_forall_clients time_forall_openings
+
+tot_clients 133
+tot_products 6610
+client 360 23 0 0 0
+client 51 111 0 0 0
+client 0 24 0 1 23
+client 3 19 0 1 65
+client 64 148 0 0 0
+client 443 165 0 0 0
+client 103 523 510 1 67
+client 47 1381 1365 1 75
+client 37 1930 1904 1 80
+client 110 2955 2938 1 64
+client 81 3583 3563 1 57
+client 511 14 0 1 35
+client 42 4784 4757 1 20
+client 123 4315 4294 1 57
+client 509 741 685 1 33
+client 87 5241 5215 1 39
+client 518 164 0 1 15
+client 515 505 391 1 43
+client 514 55 0 1 80
+client 21 6087 6046 1 46
+client 49 5539 5513 1 79
+client 134 7195 7173 1 4
+client 179 7049 7023 1 21
+client 512 1704 1628 1 43
+client 513 1391 1198 1 77
+client 516 1776 1645 1 62
+client 25 7364 7330 1 91
+client 145 7534 7501 1 86
+client 521 1140 1128 1 86
+client 519 3067 2892 2 45
+client 30 9263 9226 1 41
+client 529 82 0 1 37
+client 531 95 0 1 62
+client 522 2887 2746 1 37
+client 198 9299 9280 1 75
+client 530 778 581 1 52
+client 167 10148 10125 1 71
+client 95 10875 10838 1 49
+client 526 2856 2825 1 94
+client 264 11888 11875 1 39
+client 539 131 0 1 62
+client 135 12750 12713 1 32
+client 162 11649 11624 1 98
+client 543 452 261 1 54
+client 541 116 0 1 74
+client 525 4763 4609 2 87
+client 133 13691 13662 1 31
+client 535 2524 2366 2 89
+client 540 160 0 1 97
+client 184 13442 13411 1 68
+client 548 122 0 1 31
+client 180 14861 14830 1 19
+client 27 15318 15268 1 10
+client 545 1700 1647 1 51
+client 12 14402 14358 1 84
+client 554 52 0 1 39
+client 542 1643 1475 1 93
+client 546 3097 2922 1 30
+client 35 15576 15526 1 69
+client 46 16153 16116 1 40
+client 547 2771 2677 1 66
+client 549 2424 2394 1 22
+client 142 17005 16964 1 27
+client 550 2823 2786 1 33
+client 557 102 0 1 88
+client 560 33 0 1 54
+client 158 17024 16993 1 54
+client 571 49 0 1 3
+client 567 77 0 1 70
+client 562 920 894 1 61
+client 568 82 0 1 50
+client 569 942 814 1 10
+client 570 18 0 1 56
+client 86 17607 17562 1 95
+client 574 184 121 1 12
+client 572 93 0 1 17
+client 563 1030 952 1 81
+client 57 19569 19518 1 4
+client 124 18187 18153 1 94
+client 138 19702 19656 1 29
+client 566 1593 1547 1 58
+client 575 274 111 1 56
+client 576 65 0 1 64
+client 173 20139 20110 1 29
+client 564 2806 2724 1 26
+client 578 217 199 1 67
+client 77 20344 20293 1 32
+client 573 1852 1681 1 6
+client 580 1318 1184 1 8
+client 150 21039 20991 1 17
+client 102 21441 21390 1 17
+client 582 1093 1067 1 52
+client 561 4149 3994 2 38
+client 579 1198 1148 1 65
+client 587 145 0 1 68
+client 106 20806 20769 1 68
+client 583 2263 2245 1 15
+client 584 99 0 1 83
+client 601 98 0 0 0
+client 48 22249 22207 1 16
+client 594 152 0 1 65
+client 595 1162 1027 1 26
+client 586 1280 1246 1 59
+client 593 1251 1215 1 44
+client 596 786 651 1 34
+client 599 53 0 1 91
+client 589 1176 1119 1 88
+client 598 270 70 1 83
+client 214 21817 21787 1 99
+client 610 748 612 1 1
+client 606 483 409 1 57
+client 590 2305 2104 1 71
+client 613 14 0 1 25
+client 139 22643 22606 1 98
+client 600 2422 2230 1 3
+client 2 23898 23826 1 46
+client 604 1675 1492 1 45
+client 619 80 0 1 12
+client 617 173 0 1 29
+client 609 679 541 1 84
+client 621 621 582 1 6
+client 607 2277 2251 1 46
+client 616 125 0 1 45
+client 242 24834 24806 1 44
+client 72 24686 24645 1 63
+client 611 1922 1780 1 62
+client 622 788 707 1 42
+client 255 26001 25985 1 29
+client 625 148 0 1 44
+client 614 1421 1397 1 93
+client 217 25775 25745 1 83
+client 605 3243 3104 1 94
+client 628 30 0 1 80
+cash 0 1251 21 1 1378,1578,1359,1219,1660,159,1898,899,1499,2038,698,1758,878,1159,1958,658,1439,399,2040,1340,658 27072
+cash 1 1293 28 1 519,1399,1659,1198,459,838,978,478,1778,1559,1038,838,699,1418,439,258,1438,598,1959,138,638,698,399,398,2038,979,939,1718 27546
+cash 2 442 10 4 1649,910,1290,1762,642,118,398,1398,218,913 9003,6001,6000,3000
+cash 3 881 13 3 726,687,886,1566,1747,766,1906,804,1784,1644,1853,1713,1893 9571,7062,6348
+cash 4 406 7 2 356,796,1836,1198,1198,1378,1840 9001,12003
+cash 5 385 8 1 1285,1125,1405,1705,65,546,285,1653 21663
+cash 6 785 15 1 947,1086,1527,1906,646,486,1446,246,1326,1086,1227,1466,106,966,1926 18530
+cash 7 703 15 1 1292,1991,1071,1371,711,1271,1212,571,171,811,351,571,1191,951,1291 18002
+cash 8 320 8 1 1124,1044,283,1703,924,624,165,885 12003
+cash 9 144 3 1 1362,744,964 6660
+cash 10 0 0 0 null null
+cash 11 0 0 0 null null
+cash 12 0 0 0 null null
+cash 13 0 0 0 null null
+cash 14 0 0 0 null null
+cash 15 0 0 0 null null
+cash 16 0 0 0 null null
+cash 17 0 0 0 null null
+cash 18 0 0 0 null null
+cash 19 0 0 0 null null
+cash 20 0 0 0 null null
+cash 21 0 0 0 null null
+cash 22 0 0 0 null null
+cash 23 0 0 0 null null
+cash 24 0 0 0 null null
+cash 25 0 0 0 null null
+cash 26 0 0 0 null null
+cash 27 0 0 0 null null
+cash 28 0 0 0 null null
+cash 29 0 0 0 null null
+cash 30 0 0 0 null null
+cash 31 0 0 0 null null
+cash 32 0 0 0 null null
+cash 33 0 0 0 null null
+cash 34 0 0 0 null null
+cash 35 0 0 0 null null
+cash 36 0 0 0 null null
+cash 37 0 0 0 null null
+cash 38 0 0 0 null null
+cash 39 0 0 0 null null
+cash 40 0 0 0 null null
+cash 41 0 0 0 null null
+cash 42 0 0 0 null null
+cash 43 0 0 0 null null
+cash 44 0 0 0 null null
+cash 45 0 0 0 null null
+cash 46 0 0 0 null null
+cash 47 0 0 0 null null
+cash 48 0 0 0 null null
+cash 49 0 0 0 null null
+cash 50 0 0 0 null null
+cash 51 0 0 0 null null
+cash 52 0 0 0 null null
+cash 53 0 0 0 null null
+cash 54 0 0 0 null null
+cash 55 0 0 0 null null
+cash 56 0 0 0 null null
+cash 57 0 0 0 null null
+cash 58 0 0 0 null null
+cash 59 0 0 0 null null
+cash 60 0 0 0 null null
+cash 61 0 0 0 null null
+cash 62 0 0 0 null null
+cash 63 0 0 0 null null
+cash 64 0 0 0 null null
+cash 65 0 0 0 null null
+cash 66 0 0 0 null null
+cash 67 0 0 0 null null
+cash 68 0 0 0 null null
+cash 69 0 0 0 null null
+cash 70 0 0 0 null null
+cash 71 0 0 0 null null
+cash 72 0 0 0 null null
+cash 73 0 0 0 null null
+cash 74 0 0 0 null null
+cash 75 0 0 0 null null
+cash 76 0 0 0 null null
+cash 77 0 0 0 null null
+cash 78 0 0 0 null null
+cash 79 0 0 0 null null
+cash 80 0 0 0 null null
+cash 81 0 0 0 null null
+cash 82 0 0 0 null null
+cash 83 0 0 0 null null
+cash 84 0 0 0 null null
+cash 85 0 0 0 null null
+cash 86 0 0 0 null null
+cash 87 0 0 0 null null
+cash 88 0 0 0 null null
+cash 89 0 0 0 null null
+cash 90 0 0 0 null null
+cash 91 0 0 0 null null
+cash 92 0 0 0 null null
+cash 93 0 0 0 null null
+cash 94 0 0 0 null null
+cash 95 0 0 0 null null
+cash 96 0 0 0 null null
+cash 97 0 0 0 null null
+cash 98 0 0 0 null null
+cash 99 0 0 0 null null

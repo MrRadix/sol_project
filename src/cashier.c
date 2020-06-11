@@ -64,7 +64,7 @@ void *send_analytics(void *arg) {
     cashier_mutex_unlock(&state_lock[id]);
 
 
-    while (open) {
+    while (open && !quit) {
 
         cashier_mutex_lock(&clients_inside_lock);
         remaining_clients = clients_inside;
@@ -165,14 +165,14 @@ void *cashier(void *arg) {
     // starts count time of opening
     gettimeofday(&opening_start, NULL);
 
-    while (open) {
+    while (open && !quit) {
 
         /**
          * waits for a client in queue
          */
         cashier_mutex_lock(cash_q[id].mutex);
 
-        while (ISEMPTY(cash_q[id]) && open) {
+        while (ISEMPTY(cash_q[id]) && open && !quit) {
 
             cashier_cond_wait(cash_q[id].empty, cash_q[id].mutex);
             
@@ -182,7 +182,7 @@ void *cashier(void *arg) {
         }
         cashier_mutex_unlock(cash_q[id].mutex);
 
-        if (!open) {  
+        if (!open || quit) {  
             continue;
         }
 
@@ -290,6 +290,8 @@ void *cashier(void *arg) {
     cashiers_info[id].n_closings += 1;
     add(&(cashiers_info[id].time_per_operiod), opening_time);
     cashier_mutex_unlock(&cashiers_info_lock[id]);
+
+    fprintf(stderr, "closing %d", id);
 
     pthread_exit((void*)EXIT_SUCCESS);
 }
