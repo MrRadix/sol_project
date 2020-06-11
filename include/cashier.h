@@ -7,6 +7,7 @@
 
 struct analytics_data {
     int n_clients;
+    time_t timestamp;
     int id;
 };
 

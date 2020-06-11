@@ -15,9 +15,7 @@ typedef struct _fifo_tsqueue_t {
 } fifo_tsqueue_t;
 
 /**
- * params:
- *  - queue:    queue to initialize
- *  - n:        queue dimention
+ * initializes queue
  */
 int fifo_tsqueue_init(fifo_tsqueue_t *queue);
 
@@ -32,11 +30,7 @@ int fifo_tsqueue_destroy(fifo_tsqueue_t *queue);
 int fifo_tsqueue_isempty(fifo_tsqueue_t queue);
 
 /**
- * params:
- *  - queue: queue
- *  - str: element to push in queue
- * 
- * effects: adds element to queue
+ * adds element of size in bytes size to queue
  */
 int fifo_tsqueue_push(fifo_tsqueue_t *queue, void *el, size_t size);
 

@@ -112,6 +112,7 @@ int main(int argc, char const *argv[])
     int p = -1;
     int prod_time = -1;
     int analytics_intervall = -1;
+    int analytics_diff = -1;
     int s1 = -1;
     int s2 = -1;
     char *log_filename = NULL;
@@ -141,16 +142,17 @@ int main(int argc, char const *argv[])
         strstrip(&parameter);
         strstrip(&value);
 
-        if (strcmp(parameter, "K") == 0)             k = atoi(value);
-        if (strcmp(parameter, "INITKN") == 0)        init_k_n = atoi(value);
-        if (strcmp(parameter, "C") == 0)             c = atoi(value);
-        if (strcmp(parameter, "E") == 0)             e = atoi(value);
-        if (strcmp(parameter, "T") == 0)             t = atoi(value);
-        if (strcmp(parameter, "P") == 0)             p = atoi(value);
-        if (strcmp(parameter, "PRODTIME") == 0)      prod_time = atoi(value);
-        if (strcmp(parameter, "ANALYTICS_T") == 0)   analytics_intervall = atoi(value);
-        if (strcmp(parameter, "S1") == 0)            s1 = atoi(value);
-        if (strcmp(parameter, "S2") == 0)            s2 = atoi(value);
+        if (strcmp(parameter, "K") == 0)                k = atoi(value);
+        if (strcmp(parameter, "INITKN") == 0)           init_k_n = atoi(value);
+        if (strcmp(parameter, "C") == 0)                c = atoi(value);
+        if (strcmp(parameter, "E") == 0)                e = atoi(value);
+        if (strcmp(parameter, "T") == 0)                t = atoi(value);
+        if (strcmp(parameter, "P") == 0)                p = atoi(value);
+        if (strcmp(parameter, "PRODTIME") == 0)         prod_time = atoi(value);
+        if (strcmp(parameter, "ANALYTICS_T") == 0)      analytics_intervall = atoi(value);
+        if (strcmp(parameter, "ANALYTICS_DIFF") == 0)   analytics_diff = atoi(value);
+        if (strcmp(parameter, "S1") == 0)               s1 = atoi(value);
+        if (strcmp(parameter, "S2") == 0)               s2 = atoi(value);
         if (strcmp(parameter, "LOG_FN") == 0) {
             log_filename = (char*)malloc(strlen(value)*sizeof(char));
             strcpy(log_filename, value);
@@ -206,18 +208,23 @@ int main(int argc, char const *argv[])
         free(log_filename);
         exit(EXIT_FAILURE);
     }
+    if (analytics_diff <= 0) {
+        fprintf(stderr, "ANALYTICS_DIFF must be set greater than 0\n");
+        free(log_filename);
+        exit(EXIT_FAILURE);
+    }
     if (log_filename == NULL || strcmp(log_filename, "") == 0) {
         fprintf(stderr, "LOG_FN need to be set\n");
         free(log_filename);
         exit(EXIT_FAILURE);
     }
-    if (s1 <= 0) {
-        fprintf(stderr, "S1 must be set greater than 0\n");
+    if (s1 < 1 || s1 > k) {
+        fprintf(stderr, "S1 must be set between 1 and K\n");
         free(log_filename);
         exit(EXIT_FAILURE);
     }
-    if (s2 <= 0) {
-        fprintf(stderr, "S2 must be greater than 0\n");
+    if (s2 < 1 || s2 > c) {
+        fprintf(stderr, "S2 must be between 1 and C\n");
         free(log_filename);
         exit(EXIT_FAILURE);
     }
@@ -234,6 +241,7 @@ int main(int argc, char const *argv[])
     d_args->n_max_product = p;
     d_args->product_time = prod_time;
     d_args->analytics_t_intervall = analytics_intervall;
+    d_args->analytics_time_diff = analytics_diff;
     d_args->s1 = 4;
     d_args->s2 = 10;
 
