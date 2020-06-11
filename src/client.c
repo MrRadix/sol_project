@@ -79,7 +79,7 @@ void client_quit(int cpipe[2], int id) {
 
     client_cond_signal(&max_opened_pipes);
     client_mutex_unlock(&opened_pipes_lock);
-    //fprintf(stderr, "---------------------------- client %d finished\n", id);
+
     pthread_exit((void*)EXIT_SUCCESS);
 
 }
@@ -89,7 +89,6 @@ void *client(void *arg) {
     int p_time          = ((struct client_args*)arg)->purchase_time;
     int max_cash        = ((struct client_args*)arg)->max_cash;
     int products        = ((struct client_args*)arg)->products;
-    free(arg);
 
     unsigned int seed   = time(NULL) ^ id;
 
@@ -109,11 +108,11 @@ void *client(void *arg) {
     int response;
     int read_val;
 
+    free(arg);
+
     mask_signals();
 
     gettimeofday(&sm_start, NULL);
-
-    //fprintf(stderr, "started client %d\n", id);
 
     client_mutex_lock(&opened_pipes_lock);
 
@@ -140,8 +139,6 @@ void *client(void *arg) {
         client_quit(ca_2_cl, id);
     }
 
-    //fprintf(stderr, "client %d starting purchases\n", id);
-
     // sleeps for p_time ms (simulates client purchase period)
     purchase(p_time);
 
@@ -158,8 +155,6 @@ void *client(void *arg) {
         
         if (fifo_tsqueue_push(&zero_products_q, (void*)&ca_2_cl[1], sizeof(ca_2_cl[1])) != 0) {
             perror("client error during queue push operation");
-            close(ca_2_cl[0]);
-            close(ca_2_cl[1]);
             pthread_exit((void*)EXIT_FAILURE);
         }
 
@@ -192,14 +187,7 @@ void *client(void *arg) {
 
         client_quit(ca_2_cl, id);
     }
-    
-
-    //fprintf(stderr, "client %d finished purchases\n", id);
-
-    /**
-     * TODO: client with 0 product requests exit to director
-     */ 
-    //enter_queue_time = time(NULL);
+ 
     gettimeofday(&queue_start, NULL);
     while (!exit_queue) {
 
@@ -216,12 +204,10 @@ void *client(void *arg) {
         while (!cashier_open) {
             cashier_id = rand_r(&seed) % (max_cash);
             
-            //fprintf(stderr, "client %d trying cahsier %d\n", id, cashier_id);
             client_mutex_lock(&state_lock[cashier_id]);
             cashier_open = state[cashier_id];
             client_mutex_unlock(&state_lock[cashier_id]);
         }
-        //fprintf(stderr, "client %d entered in queue of cashier %d\n", id, cashier_id);
 
         if (quit){ 
             client_mutex_lock(&clients_inside_lock);
@@ -232,7 +218,6 @@ void *client(void *arg) {
             client_quit(ca_2_cl, id);
         }
 
-        //fprintf(stderr, "client %d pushing in %d queue pfd: %d\n", id, cashier_id, ca_2_cl[1]);
         if (fifo_tsqueue_push(&cash_q[cashier_id], (void*)&ca_2_cl[1], sizeof(ca_2_cl[1])) != 0) {
             perror("client error during queue push operation");
             close(ca_2_cl[0]);
@@ -255,19 +240,14 @@ void *client(void *arg) {
          */
         if (response == CLOSING) {
             cashier_open = 0;
-            //fprintf(stderr, "client %d received closing message from cashier %d\n", id, cashier_id);
             continue;
         }
 
         exit_queue = 1;
     }
-
-    //fprintf(stderr, "----------- client %d sending all data to cashier %d\n", id, cashier_id);
     
     gettimeofday(&queue_stop, NULL);
     gettimeofday(&sm_stop, NULL);
-
-    timersub(&sm_stop, &sm_start, &sm_result);
 
     timersub(&queue_stop, &queue_start, &queue_result);
     timersub(&sm_stop, &sm_start, &sm_result);
@@ -284,14 +264,6 @@ void *client(void *arg) {
     buff[cashier_id].q_viewed = queues_viewed;
 
     buff_is_empty[cashier_id] = 0;
-
-    /*
-    fprintf(
-        stderr,
-        "%-5d\t%-5ld\t%-5ld\t%-5d\t%-5d\n", 
-        buff[cashier_id].id, buff[cashier_id].sm_time, buff[cashier_id].q_time, buff[cashier_id].q_viewed, buff[cashier_id].n_products
-    );
-    */
 
     client_cond_signal(&buff_empty[cashier_id]);
     client_mutex_unlock(&buff_lock[cashier_id]);
@@ -310,7 +282,6 @@ void client_thread_init() {
 
     fifo_tsqueue_init(&zero_products_q);
 
-    //dir_buff = (client_info *)malloc(sizeof(client_info));
     dir_buff_is_empty = 1;
     pthread_mutex_init(&dir_buff_lock, NULL);
     pthread_cond_init(&dir_buff_empty, NULL);
@@ -320,7 +291,5 @@ void client_thread_init() {
 }
 
 void client_thread_clear() {
-
     fifo_tsqueue_destroy(&zero_products_q);
-    //free(dir_buff);
 }
