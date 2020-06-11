@@ -291,8 +291,6 @@ void *cashier(void *arg) {
     add(&(cashiers_info[id].time_per_operiod), opening_time);
     cashier_mutex_unlock(&cashiers_info_lock[id]);
 
-    fprintf(stderr, "closing %d", id);
-
     pthread_exit((void*)EXIT_SUCCESS);
 }
 
