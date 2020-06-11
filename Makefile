@@ -1,5 +1,5 @@
 CC 			= gcc
-CFLAGS 		+= -Wall -pedantic
+CFLAGS 		+= -Wall -pedantic -std=c99
 THREADS		= -pthread
 
 LIBDIR		= ./lib
@@ -9,6 +9,7 @@ TSTSRC		= ./tests
 BINDIR		= ./bin
 BUILDDIR	= ./build
 
+DEFINES		= -D_POSIX_SOURCE=200809L -D_DEFAULT_SOURCE
 INCLUDES	= -I $(INCDIR)
 LDFLAGS		= -L $(LIBDIR)
 LIBS 		= -ltsqueue -lpthread -lllist
@@ -23,25 +24,20 @@ LOG_FN = test_out.log
 
 all: $(TARGET)
 
-tests: $(TEST_LLIST)
-
-$(TEST_LLIST) : $(TSTSRC)/linkedlist_test.c $(LIBDIR)/libllist.a
-	$(CC) $(CFLAGS) $(INCLUDES) $(LDFLAGS) $(LIBS) -g $^ -o $@
-
 $(TARGET) : $(BUILDDIR)/supermarket.o $(BUILDDIR)/client.o $(BUILDDIR)/cashier.o $(BUILDDIR)/director.o $(LIBDIR)/libtsqueue.a $(LIBDIR)/libllist.a
 	$(CC) $(CFLAGS) $(THREADS) $(INCLUDES) $(LDFLAGS) $(LIBS) -g $^ -o $@
 
 $(BUILDDIR)/supermarket.o : $(SRCDIR)/supermarket.c
-	$(CC) $(CFLAGS) $(INCLUDES) -g -c $^ -o $@
+	$(CC) $(CFLAGS) $(INCLUDES) $(DEFINES) -g -c $^ -o $@
 
 $(BUILDDIR)/client.o : $(SRCDIR)/client.c $(INCDIR)/client.h
-	$(CC) $(CFLAGS) $(INCLUDES) -g -c $< -o $@
+	$(CC) $(CFLAGS) $(INCLUDES) $(DEFINES) -g -c $< -o $@
 
 $(BUILDDIR)/cashier.o : $(SRCDIR)/cashier.c $(INCDIR)/cashier.h
-	$(CC) $(CFLAGS) $(INCLUDES) -g -c $< -o $@
+	$(CC) $(CFLAGS) $(INCLUDES) $(DEFINES) -g -c $< -o $@
 
 $(BUILDDIR)/director.o : $(SRCDIR)/director.c $(INCDIR)/director.h
-	$(CC) $(CFLAGS) $(INCLUDES) -g -c $< -o $@
+	$(CC) $(CFLAGS) $(INCLUDES) $(DEFINES) -g -c $< -o $@
 
 $(LIBDIR)/libtsqueue.a : $(BUILDDIR)/tsqueue.o
 	ar rcs $@ $<
@@ -90,21 +86,23 @@ test:
 	@echo
 	@echo
 	@./analisi.sh $(LOG_FN)
+	@echo
+	@echo
 
 
 test2:
 	@echo [+] Generating config file in $(CONFIG_FILE)...
-	@echo K 3000 > $(CONFIG_FILE)
-	@echo C 1000 >> $(CONFIG_FILE)
-	@echo E 3 >> $(CONFIG_FILE)
-	@echo T 11 >> $(CONFIG_FILE)
-	@echo P 10 >> $(CONFIG_FILE)
-	@echo INITKN 3 >> $(CONFIG_FILE)
+	@echo K 5 > $(CONFIG_FILE)
+	@echo C 2000 >> $(CONFIG_FILE)
+	@echo E 5 >> $(CONFIG_FILE)
+	@echo T 500 >> $(CONFIG_FILE)
+	@echo P 80 >> $(CONFIG_FILE)
+	@echo INITKN 1 >> $(CONFIG_FILE)
 	@echo PRODTIME 20 >> $(CONFIG_FILE)
-	@echo ANALYTICS_T 3000 >> $(CONFIG_FILE)
+	@echo ANALYTICS_T 100 >> $(CONFIG_FILE)
 	@echo LOG_FN $(LOG_FN) >> $(CONFIG_FILE)
-	@echo S1 50 >> $(CONFIG_FILE)
-	@echo S2 100 >> $(CONFIG_FILE)
+	@echo S1 1 >> $(CONFIG_FILE)
+	@echo S2 5 >> $(CONFIG_FILE)
 
 	@echo [+] Launching supermarket process...
 	@$(BINDIR)/supermarket & echo $$! > sm.PID
@@ -112,8 +110,8 @@ test2:
 	@sleep 25
 
 	@if [ -e sm.PID ]; then \
-		echo [+] sending SIGHUP to supermarket process...; \
-		kill -1 $$(cat sm.PID) || true; \
+		echo [+] sending SIGQUIT to supermarket process...; \
+		kill -3 $$(cat sm.PID) || true; \
 		echo [+] waiting for supermarket process to close...; \
 		while sleep 1; do ps -p $$(cat sm.PID) 1>/dev/null || break; done; \
 	fi;
@@ -122,3 +120,5 @@ test2:
 	@echo
 	@echo
 	@./analisi.sh $(LOG_FN)
+	@echo
+	@echo
