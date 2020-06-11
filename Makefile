@@ -87,7 +87,7 @@ test:
 
 	@if [ -e sm.PID ]; then \
 		echo [+] sending SIGHUP to supermarket process...; \
-		kill -3 $$(cat sm.PID) || true; \
+		kill -1 $$(cat sm.PID) || true; \
 		echo [+] waiting for supermarket process to close...; \
 		while sleep 1; do ps -p $$(cat sm.PID) 1>/dev/null || break; done; \
 	fi;
