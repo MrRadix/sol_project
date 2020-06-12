@@ -386,9 +386,6 @@ void cashier_thread_init(int n_cashiers, int n_clients) {
     pthread_mutex_init(&n_clients_lock, NULL);
     n_total_clients = 0;
 
-    pthread_mutex_init(&open_cashiers_lock, NULL);
-    n_open_cashiers = 0;
-
     fifo_tsqueue_init(&clients_info_q);
     fifo_tsqueue_init(&analytics_q);
 }

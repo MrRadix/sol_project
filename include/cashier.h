@@ -105,9 +105,6 @@ pthread_cond_t max_clients_inside;
 int clients_inside;
 
 
-int n_open_cashiers;
-pthread_mutex_t open_cashiers_lock;
-
 /**
  * count total products purchased
  */

@@ -1,6 +1,6 @@
 #define MIN_KTIME 20    // min time for a cashier in milliseconds
 #define MAX_KTIME 80    // max time for a cashier in milliseconds
-
+#define D_EXIT_MESSAGE 1
 
 struct director_args {
     char *log_file_name;

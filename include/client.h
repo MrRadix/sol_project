@@ -1,7 +1,6 @@
 #include <time.h>
 #include <pthread.h>
 #include "cashier.h"
-#define D_EXIT_MESSAGE 1
 #define MAXOPIPES 500
 
 struct client_args {

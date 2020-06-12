@@ -193,8 +193,8 @@ int main(int argc, char const *argv[])
         free(log_filename);
         exit(EXIT_FAILURE);
     }
-    if (p <= 0) {
-        fprintf(stderr, "P must be set greater than 0\n");
+    if (p < 0) {
+        fprintf(stderr, "P must be set greater or equal than 0\n");
         free(log_filename);
         exit(EXIT_FAILURE);
     }

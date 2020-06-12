@@ -49,14 +49,43 @@ void director_cond_signal(pthread_cond_t *cond) {
     }
 }
 
+void zero_products_clients_handler() {
+    void* channel;
+    int message;
+
+    while (!fifo_tsqueue_isempty(zero_products_q)) {
+
+        channel = fifo_tsqueue_pop(&zero_products_q);
+        message = D_EXIT_MESSAGE;
+
+        if (write(*(int*)channel, &message, sizeof(int)) < 0) {
+            perror("director error during sendinng exit message to client");
+            pthread_exit((void*)EXIT_FAILURE);
+        }
+        free(channel);
+
+        director_mutex_lock(&dir_buff_lock);
+        while(dir_buff_is_empty) {
+            director_cond_wait(&dir_buff_empty, &dir_buff_lock);
+        }
+
+        fifo_tsqueue_push(&clients_info_q, (void*)&dir_buff, sizeof(dir_buff));
+
+        dir_buff_is_empty = 1;
+        director_mutex_unlock(&dir_buff_lock);
+
+        director_mutex_lock(&n_clients_lock);
+        n_total_clients += 1;
+        director_mutex_unlock(&n_clients_lock);
+    }
+}
+
 void *clients_handler(void *arg) {
     int c = ((struct clients_handler_args *)arg)->n_clients;
     int e = ((struct clients_handler_args *)arg)->n_clients_group;
     int k = ((struct clients_handler_args *)arg)->n_cashiers;
     int t = ((struct clients_handler_args *)arg)->client_max_time;
     int p = ((struct clients_handler_args *)arg)->n_max_products;
-    void* channel;
-    int message;
     int remaining_clients;
 
     mask_signals();
@@ -108,31 +137,7 @@ void *clients_handler(void *arg) {
         /**
          * handles clients with 0 products
          */
-        while (!fifo_tsqueue_isempty(zero_products_q)) {
-
-            channel = fifo_tsqueue_pop(&zero_products_q);
-            message = D_EXIT_MESSAGE;
-
-            if (write(*(int*)channel, &message, sizeof(int)) < 0) {
-                perror("director error during sendinng exit message to client");
-                pthread_exit((void*)EXIT_FAILURE);
-            }
-            free(channel);
-
-            director_mutex_lock(&dir_buff_lock);
-            while(dir_buff_is_empty) {
-                director_cond_wait(&dir_buff_empty, &dir_buff_lock);
-            }
-
-            fifo_tsqueue_push(&clients_info_q, (void*)&dir_buff, sizeof(dir_buff));
-
-            dir_buff_is_empty = 1;
-            director_mutex_unlock(&dir_buff_lock);
-
-            director_mutex_lock(&n_clients_lock);
-            n_total_clients += 1;
-            director_mutex_unlock(&n_clients_lock);
-        }
+        zero_products_clients_handler();
     }
 
     // waits for ending of all clients
@@ -140,6 +145,12 @@ void *clients_handler(void *arg) {
     remaining_clients = clients_inside;
     director_mutex_unlock(&clients_inside_lock);
     while (remaining_clients > 0) {
+
+        /**
+         * handles clients with 0 products
+         */
+        zero_products_clients_handler();
+
         sched_yield();
         
         director_mutex_lock(&clients_inside_lock);
