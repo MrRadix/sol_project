@@ -53,8 +53,8 @@ void set_sig_handler(void) {
         perror("error during unmasking HUP");
         exit(EXIT_FAILURE);
     }
-    
-    //pthread_sigmask(SIG_SETMASK, &set, NULL);
+
+    pthread_sigmask(SIG_SETMASK, &set, NULL);
 }
 
 void strstrip(char **string)

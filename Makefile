@@ -10,9 +10,9 @@ BINDIR		= ./bin
 BUILDDIR	= ./build
 
 DEFINES		= -D_POSIX_SOURCE=200809L -D_DEFAULT_SOURCE
-INCLUDES	= -I $(INCDIR)
-LDFLAGS		= -L $(LIBDIR)
-LIBS 		= -ltsqueue -lpthread -lllist
+INCLUDES	= -I$(INCDIR)
+LDFLAGS		= -L$(LIBDIR)
+LIBS 		= -ltsqueue -lpthread -llinkedlist
 
 TARGET = $(BINDIR)/supermarket
 TEST_LLIST = $(BINDIR)/linkedlist_test
@@ -20,11 +20,11 @@ TEST_LLIST = $(BINDIR)/linkedlist_test
 CONFIG_FILE = config/config.txt
 LOG_FN = test_out.log
 
-.PHONY: all clean test test2
+.PHONY: all clean test
 
 all: $(TARGET)
 
-$(TARGET) : $(BUILDDIR)/supermarket.o $(BUILDDIR)/client.o $(BUILDDIR)/cashier.o $(BUILDDIR)/director.o $(LIBDIR)/libtsqueue.a $(LIBDIR)/libllist.a
+$(TARGET) : $(BUILDDIR)/supermarket.o $(BUILDDIR)/client.o $(BUILDDIR)/cashier.o $(BUILDDIR)/director.o $(LIBDIR)/libtsqueue.a $(LIBDIR)/liblinkedlist.a
 	@mkdir $(BINDIR) 2>/dev/null || true
 	$(CC) $(CFLAGS) $(THREADS) $(INCLUDES) $(LDFLAGS) $(LIBS) -g $^ -o $@
 
@@ -56,7 +56,7 @@ $(LIBDIR)/libtsqueue.a : $(BUILDDIR)/tsqueue.o
 	@mkdir $(LIBDIR) 2>/dev/null || true
 	ar rcs $@ $<
 
-$(LIBDIR)/libllist.a : $(BUILDDIR)/linkedlist.o
+$(LIBDIR)/liblinkedlist.a : $(BUILDDIR)/linkedlist.o
 	@mkdir $(LIBDIR) 2>/dev/null || true
 	ar rcs $@ $<
 
