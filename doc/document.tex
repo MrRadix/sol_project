@@ -1,0 +1,176 @@
+%Carattere dimensione 12
+\documentclass[11pt]{report}
+
+%Margini e interlinea
+\usepackage[margin=2cm]{geometry}
+\pagestyle{plain}
+\linespread{1}
+
+%Librerie utili
+\usepackage[italian]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{times}
+\usepackage{graphicx}
+\usepackage{floatflt}
+\usepackage{blindtext}
+\usepackage{enumitem}
+\usepackage{amsthm}
+\usepackage{subfig}
+\usepackage{listings}
+\usepackage{listingsutf8}
+\usepackage{amsmath}
+\usepackage{framed}
+\usepackage{minibox}
+\usepackage{float}
+\usepackage{wrapfig}
+\usepackage{longtable}
+\usepackage[strict]{changepage}
+\usepackage{pgfplots}
+\usepackage{tikz}
+\usetikzlibrary{matrix}
+\pgfplotsset{width=11cm,compat=1.9}
+\usepgfplotslibrary{external}
+\tikzexternalize
+
+\begin{document}
+	
+	\begin{titlepage}
+		
+		\linespread{2}
+		
+		\begin{figure}[t]
+			\centering\includegraphics[width=0.9\textwidth]{unipi_logo}
+		\end{figure}
+		
+		\begin{center}
+			\vspace*{5mm}
+			{\LARGE{\bf Sistemi Operativi e Laboratorio Corso A}}\\
+			\vspace{5mm}
+			{\LARGE{\bf Relazione progetto}}\\
+		\end{center}
+		
+		\vspace{10mm}
+		
+		\centering{\large{\bf Anno Accademico 2019/2020 }}
+		
+		\vspace{30mm}
+		
+		\hfill
+		\begin{minipage}[t]{0.47\textwidth}\raggedright
+			{\large{\bf Professore: \\ Giuseppe Prencipe\\ }}
+		\end{minipage}
+		\hfill
+		\begin{minipage}[t]{0.47\textwidth}\raggedleft
+			{\large{\bf Presentato da: \\ Edoardo Ermini\\ }}
+		\end{minipage}
+		
+	\end{titlepage}
+	
+	%\tableofcontents
+	
+	\chapter*{Struttura del progetto}
+	Il programma è diviso in 8 file principali \textit{cashier.c, client.c, director.c, supermarket.c} contenuti nella directory \textit{src} aventi i rispettivi header files all'interno della directory \textit{include}.
+	Oltre a questi files ce ne sono altri 4: \textit{tsqueue.c} e \textit{linkedlist.c} in \textit{src} e i loro rispettivi header files all'interno di \textit{include}.
+	
+	
+	\section*{cashier}
+	
+	\subsection*{cashier.h}
+	Il file \textit{include/cashier.h} è incluso in \textit{include/client.h} che a sua volta è incluso in \textit{src/director.c}, in quanto contiene le strutture dati tali da permettere al direttore di analizzare le informazioni dei clienti che i cassieri servono.
+	Al suo interno troviamo:
+	\begin{itemize}
+		\item \textbf{struct analytics\_data} utilizzata per mandare il numero dei clienti in coda ad una cassa al direttore
+		\item \textbf{struct cashier\_info} utilizzata per salvare le informazioni dei cassieri durante il servizio 
+		\item \textbf{client\_info} utilizzata per salvare le informazioni di ogni cliente servito
+	\end{itemize}
+
+	\subsection*{cashier.c}
+	Contiene 2 funzioni principali \textit{cashier} e \textit{send\_analytics}, entrambe corrispondono a thread all'interno del processo, il primo avviato dal direttore (\textit{src/director.c}) e il secondo avviato dal cassiere.
+	Il thread \textit{send\_analytics} informa il direttore a intervalli regolari del numero dei clienti in attesa in coda, il thread \textit{cashier} gestisce i clienti in coda, salva le informazioni dei clienti serviti e aggiorna le sue informazioni.
+
+	
+	\section*{client}
+	
+	\subsection*{client.c}
+	Contiene il thread \textit{client} avviato dal direttore
+	
+	\section*{director}
+	
+	\subsection*{director.c}
+	Contiene 3 thread principali: \textit{director, clients\_handler, cashiers\_handler}, il primo avviato dal processo \textit{supermarket} gli altri 2 avviati dal primo.
+	Il thread \textit{clients\_handler} gestisce l'entrata contingentata dei clienti, invece \textit{cashiers\_handler} gestisce l'apertura e la chiusura dei cassieri in base ai dati inviati da questi ultimi attraverso il thread \textit{send\_analytics}.
+	
+	
+	\chapter*{Scelte Implementative}
+	
+	\section*{fifo\_tsqueue}
+	È stata implementata una coda fifo thread safe con lock e condition variable utilizzata principalmente per simulare i clienti in coda alla cassa, ma data la sua versatilità in quanto permette l'inserimento di valori generici oltre che dai thread \textit{client} e \textit{cashier} è utilizzata anche dai thread \textit{send\_analytics}, \textit{cashiers\_handler} e \textit{clients\_handler}. \\
+	Nel file \textit{src/tsqueue.c} c'è l'implementazione delle funzioni utilizzate per gestire la struttura dati \textbf{fifo\_tsqueue\_t} definita in \textit{include/tsqueue.h}.
+	
+	\section*{linkedlist}
+	È stata implementata una lista collegata utilizzata principalmente per salvare le informazioni dei cassieri, in particolare i tempi di apertura per ogni apertura della cassa e i tempi di servizio per ogni cliente servito. \\
+	L'implementazione consiste in una struttura dati \textbf{int\_list\_node} definita in \textit{include/linkdelist.h} e da varie procedure per operare con questa struttura dati, trattandola come se fosse un iteratore nella OOP.
+	
+	\section*{client}
+	Il meccanismo di attesa e avanzamento dei clienti ad una cassa è basato sull'utilizzo della coda fifo thread safe \textbf{cash\_q}, definita in \textit{include/cashier.h}, e di una pipe senza nome. \\
+	L'azione di mettersi in coda è stata implementata accodando alla coda \textbf{cash\_q} il file descriptor di scrittura di una pipe creata precedentemente dal ciente. \\
+	Una volta fatto questo il thread \textit{client} si mette in attesa chiamando la funzione bloccante read sul file descriptor di lettura della pipe, i messaggi che possono arrivare dal cassiere sono 2 definiti con 2 macro in \textit{include/cashier.h}:
+	\begin{itemize}
+		\item \textbf{CLOSING (0)} viene inviato quando il cassiere sta chiudendo e costringe i clienti a cambiare cassa
+		\item \textbf{NEXT (1)} viene inviato quando il cassiere comunica al cliente che deve uscire dalla coda per essere servito
+	\end{itemize}
+	Se il messaggio ricevuto è 1 i clienti inviano le proprie informazioni ai cassieri attraverso il buffer da una posizione \textbf{buff} definito in \textit{include/cashier.h} e terminano. \\
+	La gestione dei clienti con 0 prodotti è basata, allo stesso modo, sull'utilizzo di un'altra coda fifo thread safe \textbf{zero\_products\_q} definita in \textit{include/client.h} e di una pipe senza nome. \\
+	L'azione di notificare al direttore che si vuole uscire in quanto non si faranno acquisti è stata implementata inserendo in coda \textbf{zero\_products\_q} il file descriptor di scrittura di una pipe creata precedentemente dal cliente.
+	Una volta fatto questo come descrito sopra il cliente si mettera in attesa sulla read dell'unico messaggio che può arrivare dal direttore: \textbf{D\_EXIT\_MESSAGE} definito in \textit{include/director.h}. Non appena riceve il messagio invia le sue informazioni al direttore attraveso il buffer da una posizione \textbf{dir\_buff} definito in \textit{include/client.h} e termina. \\
+	Dato che ogni processo normalmente può avere aperti contemporaneamente al più 1024 file descriptor, si limita il numero di pipe aperte dai vari clienti nello stesso momento a 500. \\
+	
+	\section*{cashier}
+	È stata fatta la scelta di implementare l'azione da parte dei cassieri di informare il direttore del numero dei clienti in attesa in coda utilizzando il thread \textit{send\_analytics}. \\
+	\textit{send\_analytics} viene creato dal cassiere, utilizza una \textit{nanosleep} per attendere il giusto lasso di tempo tra un invio e l'altro e per inviare le informazioni al direttore fa uso della struttura dati \textbf{analytics\_data} definita in \textit{include/cashier.h}, della coda thread safe \textbf{fifo\_tsqueue} e dei metodi che la riguardano dichiarati e definiti in \textit{include/tsqueue.h} e \textit{src/tsqueue.c}.
+	
+	\section*{director}
+	Il compito del direttore di gestire i clienti e i cassieri è stato implementato utilizzando 2 thread figli del thread \textit{director}: 
+	\begin{itemize}
+		\item \textit{cashier\_handler}
+		\item \textit{clients\_handler}
+	\end{itemize}
+	Prima di terminare il thread prende le informazioni dei cassieri e dei clienti salvate durante il periodo di apertura e le scrive all'interno del file di log indicato nel file di configurazione.
+	
+	\subsection*{clients\_handler}
+	Se nessuna delle 2 variabili \textbf{quit} e \textbf{closing} è settata a 1 il thread crea $e$ thread clienti ogni volta che terminano  $c-e$
+	assegnando a ogni cliente creato un id che viene incrementato di 1 ad ogni thread cliente creato.
+	Oltre a creare nuovi clienti il thread clients\_handler gestisce i clienti con zero prodotti utilizzando la coda fifo thread safe \textbf{zero\_products\_q}
+	facendoli terminare una volta ricevute le loro informazioni. \\
+	Quando si riceve un segnale di uscita (\textit{quit = 1}) o di chiusura (\textit{closing = 1}) Il thread non fa entrare piu clienti, attende che quelli attivi terminino facendo uscire anche i clienti con 0 prodotti e poi termina a sua volta.
+	
+	\subsection*{cashiers\_handler}
+	Il thread apre e/o chiude le casse in base ai dati ricevuti dal thread \textit{send\_analytics}. \\
+	L'apertura e la chiusura corrispondono alla modifica della variabile condivisa \textbf{state} definita in \textit{include/cashier.h}. \\
+	Quando il direttore chiude una cassa setta \textit{state[i] = 0} con i l'id del cassiere e il cassiere i dato che controlla periodicamente se il direttore ha chiuso la cassa notifichera ai clienti in coda di cambiare cassa e terminerà. \\
+	Quando il direttore apre una cassa setta invece \textit{state[i] = 1} e crea il thread cassiere con id i precedentemente terminato. \\
+	Quando si riceve un segnale di chiusura (\textit{closing = 1}) il thread lavora normalmente fino a quando ci sono clienti attivi, una volta serviti tutti i clienti termina. \\
+	Quando si riceve un segnale di uscita (\textit{quit = 1}) il thread chiude tutti i cassieri, attende che tutti i thread cashier terminino e poi termina a sua volta.
+	 
+	
+	\subsubsection*{S1}
+	Per capire quando la soglia s1 (il numero di casse con al più un cliente in coda oltre il quale si deve chiudere una cassa) viene superata si utilizza l'array \textit{one\_client}, aggiornato ad ogni nuovo dato ricevuto, e la procedura \textit{cashiers\_with\_one\_c} che prende l'array e restituisce il numero di clienti con al più un cliente.
+	Quando la soglia viene superata si sceglie una delle casse con al piu un cliente in coda e viene chiusa cosi da evitare di chiudere una cassa che sta lavorando a regime e evitare lo spostamento di piu clienti.
+	
+	\subsubsection*{S2}
+	Quando la soglia s2 (il numero di clienti in coda ad una cassa oltre i quali se ne apre un'altra) viene superata si scorrono tutte le casse partendo dalla prima e non appena si trova una cassa chiusa viene aperta dal direttore.
+	
+	\section*{supermarket}
+	Esegue 3 operazioni principali:
+	
+	\begin{enumerate}
+		\item Legge il file di configurazione
+		\item Fa partire il thread \textit{director}
+		\item Gestisce i segnali in arrivo
+	\end{enumerate}
+	
+	La gestione dei segnali è custom solo per i segnali SIGHUP e SIGQUIT, quando riceve il primo setta la variabile \textit{closing} definita in \textit{include/cashier.h} a 1, quando riceve il secondo setta la variabile \textit{quit} definita anch'essa in \textit{include/cashier.h} a 1.
+	
+	
+	
+\end{document}
