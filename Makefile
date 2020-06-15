@@ -15,7 +15,6 @@ LDFLAGS		= -L$(LIBDIR)
 LIBS 		= -ltsqueue -lpthread -llinkedlist
 
 TARGET = $(BINDIR)/supermarket
-TEST_LLIST = $(BINDIR)/linkedlist_test
 
 CONFIG_FILE = config/config.txt
 LOG_FN = test_out.log
