@@ -64,6 +64,7 @@ clean:
 	@rm -r build/ 2>/dev/null || true
 	@rm -r lib/ 2>/dev/null || true
 	@rm -r bin/ 2>/dev/null || true
+	@rm $(LOG_FN) 2>/dev/null || true
 
 test:
 	@echo [+] Generating config file in $(CONFIG_FILE)...
