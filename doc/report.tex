@@ -1,4 +1,4 @@
-%Carattere dimensione 12
+%Carattere dimensione 11
 \documentclass[11pt]{report}
 
 %Margini e interlinea
@@ -170,6 +170,25 @@
 	\end{enumerate}
 	
 	La gestione dei segnali è custom solo per i segnali SIGHUP e SIGQUIT, quando riceve il primo setta la variabile \textit{closing} definita in \textit{include/cashier.h} a 1, quando riceve il secondo setta la variabile \textit{quit} definita anch'essa in \textit{include/cashier.h} a 1.
+	
+	\chapter*{Struttura del file di configurazione}
+	Il file di configurazione deve essere situato nella directory \textit{config} con il nome di \textit{config.txt}, deve avere 12 parametri messi ognuno in una riga e separati dai rispettivi valori da uno spazio, i parametri sono:
+	
+	\begin{itemize}
+		\item \textbf{K} Indica il massimo numero di cassieri all'interno del supermercato
+		\item \textbf{C} Indica il massimo numero di clienti che posso stare all'interno del supermercato
+		\item \textbf{E} Indica il numero di clienti che devono uscire dal supermercato prima di farne entrare altri $ E $
+		\item \textbf{T} Indica il tempo massimo in millisecondi per gli acquisti da parte dei clienti, infatti ad ogni cliente verrà associato un tempo che varia tra  $ 10 $ e $ T > 10 $ millisecondi.
+		\item \textbf{P} Indica il numero massimo di prodotti che i clienti possono acquistare, infatti ad ogni cliente verrà associato un numero di prodotti che varia tra $ 0 $ e $ P \geq 0 $
+		\item \textbf{INITKN} Indica il numero di cassieri che devono essere aperti all'apertura del supermercato
+		\item \textbf{PRODTIME} Indica il tempo fisso in millisecondi che ogni cassiere impiega per ogni cliente
+		\item \textbf{ANALYTICS\_T} Indica il tempo in millisecondi che intercorre tra l'invio di due dati consecutivi al direttore per uno stesso cassiere
+		\item \textbf{ANALYTICS\_DIFF} Indica il massimo tempo in secondi entro il quale un dato inviato da un cassiere al direttore è valido
+		\item \textbf{LOG\_FN} Indica il nome del file di log in cui il direttore, prima di chiudere, andrà a scrivere tutte le informazioni di clienti e cassieri memorizzare durante l'esecuzione.
+		\item \textbf{S1} Indica il massimo numero di casse con al più un cliente tale per cui deve essere chiusa una cassa
+		\item \textbf{S2} Indica il massimo numero di clienti in coda ad una cassa tale per cui deve essere aperta un'altra
+		
+	\end{itemize}
 	
 	\chapter*{Compilazione ed esecuzione}
 	All'interno della directory contenente il \textit{Makefile} digitare:
