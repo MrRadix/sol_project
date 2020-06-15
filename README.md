@@ -84,7 +84,7 @@ Prima di terminare il thread prende le informazioni dei cassieri e dei clienti s
 
 ### clients\_handler
 
-Se nessuna delle 2 variabili **quit** e **closing** è settata a 1 il thread crea \(e\) thread clienti ogni volta che terminano \(c-e\) assegnando a ogni cliente creato un id che viene incrementato di 1 ad ogni thread cliente creato. Oltre a creare nuovi clienti il thread clients\_handler gestisce i clienti con zero prodotti utilizzando la coda fifo thread safe **zero\_products\_q** facendoli terminare una volta ricevute le loro informazioni.
+Se nessuna delle 2 variabili **quit** e **closing** è settata a 1 il thread crea *e* thread clienti ogni volta che terminano *c - e* assegnando a ogni cliente creato un id che viene incrementato di 1 ad ogni thread cliente creato. Oltre a creare nuovi clienti il thread clients\_handler gestisce i clienti con zero prodotti utilizzando la coda fifo thread safe **zero\_products\_q** facendoli terminare una volta ricevute le loro informazioni.
 Quando si riceve un segnale di uscita (*quit = 1*) o di chiusura (*closing = 1*) Il thread non fa entrare piu clienti, attende che quelli attivi terminino facendo uscire anche i clienti con 0 prodotti e poi termina a sua volta.
 
 ### cashiers\_handler
@@ -126,11 +126,11 @@ Il file di configurazione deve essere situato nella directory *config* con il no
 
 -   **C** Indica il massimo numero di clienti che posso stare all’interno del supermercato
 
--   **E** Indica il numero di clienti che devono uscire dal supermercato prima di farne entrare altri \( E \)
+-   **E** Indica il numero di clienti che devono uscire dal supermercato prima di farne entrare altri <img src="https://render.githubusercontent.com/render/math?math=E">
 
--   **T** Indica il tempo massimo in millisecondi per gli acquisti da parte dei clienti, infatti ad ogni cliente verrà associato un tempo che varia tra \( 10 \) e \( T > 10 \) millisecondi.
+-   **T** Indica il tempo massimo in millisecondi per gli acquisti da parte dei clienti, infatti ad ogni cliente verrà associato un tempo che varia tra <img src="https://render.githubusercontent.com/render/math?math=10"> e <img src="https://render.githubusercontent.com/render/math?math=T%20\geq%2010"> millisecondi.
 
--   **P** Indica il numero massimo di prodotti che i clienti possono acquistare, infatti ad ogni cliente verrà associato un numero di prodotti che varia tra \( 0 \) e \( P \geq 0 \)
+-   **P** Indica il numero massimo di prodotti che i clienti possono acquistare, infatti ad ogni cliente verrà associato un numero di prodotti che varia tra <img src="https://render.githubusercontent.com/render/math?math=0"> e <img src="https://render.githubusercontent.com/render/math?math=P%20\geq%200">
 
 -   **INITKN** Indica il numero di cassieri che devono essere aperti all’apertura del supermercato
 
