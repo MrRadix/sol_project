@@ -160,8 +160,9 @@ int main(int argc, char const *argv[])
 
         free(line);
         line = NULL;
-
+        len = 0;
     }
+    free(line);
 
     fclose(config);
 
@@ -249,6 +250,7 @@ int main(int argc, char const *argv[])
 
     pthread_join(director_thread, NULL);
 
+    free(d_args->log_file_name);
     free(d_args);
     free(log_filename);
 

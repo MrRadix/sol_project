@@ -332,6 +332,8 @@ static void cashiers_info_clear(struct cashier_info **cinfo, int dim) {
         destroy((*cinfo)[i].time_per_operiod);
         destroy((*cinfo)[i].time_per_client);
     }
+
+    free(*cinfo);
 }
 
 static void cash_queue_clear(fifo_tsqueue_t **queue, int dim) {

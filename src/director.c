@@ -355,6 +355,7 @@ void *cashiers_handler(void *arg) {
         }
     }
 
+    free(cashiers_thread);
     free(one_client);
 
     pthread_exit((void*)EXIT_SUCCESS);
@@ -462,6 +463,8 @@ void *director(void *arg) {
             c_info->id, c_info->sm_time, c_info->q_time, c_info->q_viewed, c_info->n_products
         );
         fwrite(string, sizeof(char), strlen(string), log_file);
+
+        free(c_info);
     }
 
     // writing cashiers informations
@@ -512,6 +515,7 @@ void *director(void *arg) {
     }
 
     fclose(log_file);
+    free(string);
 
     cashier_thread_clear(k,c);
     client_thread_clear();
