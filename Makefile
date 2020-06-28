@@ -31,25 +31,9 @@ $(BUILDDIR)/supermarket.o : $(SRCDIR)/supermarket.c
 	@mkdir $(BUILDDIR) 2>/dev/null || true
 	$(CC) $(CFLAGS) $(INCLUDES) $(DEFINES) -g -c $^ -o $@
 
-$(BUILDDIR)/client.o : $(SRCDIR)/client.c $(INCDIR)/client.h
+$(BUILDDIR)/%.o : $(SRCDIR)/%.c $(INCDIR)/%.h
 	@mkdir $(BUILDDIR) 2>/dev/null || true
 	$(CC) $(CFLAGS) $(INCLUDES) $(DEFINES) -g -c $< -o $@
-
-$(BUILDDIR)/cashier.o : $(SRCDIR)/cashier.c $(INCDIR)/cashier.h
-	@mkdir $(BUILDDIR) 2>/dev/null || true
-	$(CC) $(CFLAGS) $(INCLUDES) $(DEFINES) -g -c $< -o $@
-
-$(BUILDDIR)/director.o : $(SRCDIR)/director.c $(INCDIR)/director.h
-	@mkdir $(BUILDDIR) 2>/dev/null || true
-	$(CC) $(CFLAGS) $(INCLUDES) $(DEFINES) -g -c $< -o $@
-
-$(BUILDDIR)/tsqueue.o : $(SRCDIR)/tsqueue.c $(INCDIR)/tsqueue.h
-	@mkdir $(BUILDDIR) 2>/dev/null || true
-	$(CC) $(CFLAGS) $(THREADS) $(INCLUDES) -c $< -o $@
-
-$(BUILDDIR)/linkedlist.o : $(SRCDIR)/linkedlist.c $(INCDIR)/linkedlist.h
-	@mkdir $(BUILDDIR) 2>/dev/null || true
-	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 $(LIBDIR)/libtsqueue.a : $(BUILDDIR)/tsqueue.o
 	@mkdir $(LIBDIR) 2>/dev/null || true
