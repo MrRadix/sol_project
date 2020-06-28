@@ -69,7 +69,7 @@ void purchase(int msec) {
     free(rem);
 }
 
-void client_quit(int cpipe[2], int id) {
+void client_clean(int cpipe[2], int id) {
 
     close(cpipe[0]);
     close(cpipe[1]);
@@ -79,8 +79,6 @@ void client_quit(int cpipe[2], int id) {
 
     client_cond_signal(&max_opened_pipes);
     client_mutex_unlock(&opened_pipes_lock);
-
-    pthread_exit((void*)EXIT_SUCCESS);
 
 }
 
@@ -136,7 +134,8 @@ void *client(void *arg) {
         client_cond_signal(&max_clients_inside);
         client_mutex_unlock(&clients_inside_lock);
         
-        client_quit(ca_2_cl, id);
+        client_clean(ca_2_cl, id);
+        pthread_exit((void*)EXIT_SUCCESS);
     }
 
     // sleeps for p_time ms (simulates client purchase period)
@@ -148,7 +147,8 @@ void *client(void *arg) {
         client_cond_signal(&max_clients_inside);
         client_mutex_unlock(&clients_inside_lock);
         
-        client_quit(ca_2_cl, id);
+        client_clean(ca_2_cl, id);
+        pthread_exit((void*)EXIT_SUCCESS);
     }
 
     if (products == 0) {
@@ -185,7 +185,8 @@ void *client(void *arg) {
         client_cond_signal(&dir_buff_empty);
         client_mutex_unlock(&dir_buff_lock);
 
-        client_quit(ca_2_cl, id);
+        client_clean(ca_2_cl, id);
+        pthread_exit((void*)EXIT_SUCCESS);
     }
  
     gettimeofday(&queue_start, NULL);
@@ -197,7 +198,8 @@ void *client(void *arg) {
             client_cond_signal(&max_clients_inside);
             client_mutex_unlock(&clients_inside_lock);
         
-            client_quit(ca_2_cl, id);  
+            client_clean(ca_2_cl, id);
+            pthread_exit((void*)EXIT_SUCCESS); 
         }
 
         // choses a random open cash
@@ -215,7 +217,8 @@ void *client(void *arg) {
             client_cond_signal(&max_clients_inside);
             client_mutex_unlock(&clients_inside_lock);
         
-            client_quit(ca_2_cl, id);
+            client_clean(ca_2_cl, id);
+            pthread_exit((void*)EXIT_SUCCESS);
         }
 
         if (fifo_tsqueue_push(&cash_q[cashier_id], (void*)&ca_2_cl[1], sizeof(ca_2_cl[1])) != 0) {
@@ -273,7 +276,8 @@ void *client(void *arg) {
     client_cond_signal(&max_clients_inside);
     client_mutex_unlock(&clients_inside_lock);
 
-    client_quit(ca_2_cl, id);
+    client_clean(ca_2_cl, id);
+    pthread_exit((void*)EXIT_SUCCESS);
 }
 
 void client_thread_init() {
