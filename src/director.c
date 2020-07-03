@@ -428,8 +428,6 @@ void *director(void *arg) {
 
     free(ca_h_args);
     free(cl_h_args);
-    
-    //fprintf(stderr, "n clients %d\nn products %d", n_total_clients, n_total_products);
 
     /**
      * writing log file
