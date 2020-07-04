@@ -37,6 +37,16 @@ void cashier_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mtx) {
     }
 }
 
+void mask_signals(void) {
+    sigset_t set;
+    
+    sigfillset(&set);
+    if(pthread_sigmask(SIG_SETMASK, &set, NULL) != 0) {
+        perror("client error during mask all sgnals");
+        exit(EXIT_FAILURE);
+    }
+}
+
 void *send_analytics(void *arg) {
     int id      = ((struct analytics_args*)arg)->id;
     int msec    = ((struct analytics_args*)arg)->msec;
@@ -48,6 +58,8 @@ void *send_analytics(void *arg) {
 
     float nsec;
     long sec;
+
+    mask_signals();
 
     nsec = (float)msec*1000000;
     sec = 0;
@@ -117,16 +129,6 @@ void pass_products(long msec, int id) {
 
     free(res);
     free(rem);
-}
-
-void mask_signals(void) {
-    sigset_t set;
-    
-    sigfillset(&set);
-    if(pthread_sigmask(SIG_SETMASK, &set, NULL) != 0) {
-        perror("client error during mask all sgnals");
-        exit(EXIT_FAILURE);
-    }
 }
 
 void *cashier(void *arg) {
@@ -231,11 +233,9 @@ void *cashier(void *arg) {
         /**
          * updating cashier info
          */
-        cashier_mutex_lock(&cashiers_info_lock[id]);
         cashiers_info[id].n_clients += 1;
         cashiers_info[id].n_products += buff[id].n_products; 
         add(&(cashiers_info[id].time_per_client), client_time);
-        cashier_mutex_unlock(&cashiers_info_lock[id]);
 
         buff_is_empty[id] = 1;
 
@@ -286,10 +286,8 @@ void *cashier(void *arg) {
     opening_time = (opening_result.tv_sec*1000000 + opening_result.tv_usec)/1000;
 
     // adding closing time to cashier info
-    cashier_mutex_lock(&cashiers_info_lock[id]);
     cashiers_info[id].n_closings += 1;
     add(&(cashiers_info[id].time_per_operiod), opening_time);
-    cashier_mutex_unlock(&cashiers_info_lock[id]);
 
     pthread_exit((void*)EXIT_SUCCESS);
 }
@@ -376,7 +374,6 @@ void cashier_thread_init(int n_cashiers, int n_clients) {
     buff = (client_info *)malloc(n_cashiers*sizeof(client_info));
 
     cashiers_info_init(&cashiers_info, n_cashiers);
-    cash_lock_init(&cashiers_info_lock, n_cashiers);
 
     pthread_mutex_init(&clients_inside_lock, NULL);
     pthread_cond_init(&max_clients_inside, NULL);

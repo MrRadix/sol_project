@@ -94,8 +94,6 @@ fifo_tsqueue_t clients_info_q;
  */
 struct cashier_info *cashiers_info;
 
-pthread_mutex_t *cashiers_info_lock;
-
 
 /**
  * mutex initialized by director
