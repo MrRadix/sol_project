@@ -69,16 +69,21 @@ void purchase(int msec) {
     free(rem);
 }
 
-void client_clean(int cpipe[2], int id) {
+void client_cleanup(void *cpipe) {
 
-    close(cpipe[0]);
-    close(cpipe[1]);
+    close(((int*)cpipe)[0]);
+    close(((int*)cpipe)[1]);
 
     client_mutex_lock(&opened_pipes_lock);
     opened_pipes--;
 
     client_cond_signal(&max_opened_pipes);
     client_mutex_unlock(&opened_pipes_lock);
+
+    client_mutex_lock(&clients_inside_lock);
+    clients_inside--;
+    client_cond_signal(&max_clients_inside);
+    client_mutex_unlock(&clients_inside_lock);
 
 }
 
@@ -106,11 +111,11 @@ void *client(void *arg) {
     int response;
     int read_val;
 
+    int* cleanup_arg = (int*)malloc(2*sizeof(int));
+
     free(arg);
 
     mask_signals();
-
-    gettimeofday(&sm_start, NULL);
 
     client_mutex_lock(&opened_pipes_lock);
 
@@ -118,6 +123,8 @@ void *client(void *arg) {
     while (opened_pipes == MAXOPIPES) {
         client_cond_wait(&max_opened_pipes, &opened_pipes_lock);
     }
+
+    gettimeofday(&sm_start, NULL);
     
     if (pipe(ca_2_cl) != 0) {
         perror("error during pipe creation");
@@ -128,13 +135,12 @@ void *client(void *arg) {
 
     client_mutex_unlock(&opened_pipes_lock);
 
+    cleanup_arg[0] = ca_2_cl[0];
+    cleanup_arg[1] = ca_2_cl[1];
+
+    pthread_cleanup_push(client_cleanup, (void*)cleanup_arg);
+
     if (quit){ 
-        client_mutex_lock(&clients_inside_lock);
-        clients_inside--;
-        client_cond_signal(&max_clients_inside);
-        client_mutex_unlock(&clients_inside_lock);
-        
-        client_clean(ca_2_cl, id);
         pthread_exit((void*)EXIT_SUCCESS);
     }
 
@@ -142,12 +148,6 @@ void *client(void *arg) {
     purchase(p_time);
 
     if (quit){ 
-        client_mutex_lock(&clients_inside_lock);
-        clients_inside--;
-        client_cond_signal(&max_clients_inside);
-        client_mutex_unlock(&clients_inside_lock);
-        
-        client_clean(ca_2_cl, id);
         pthread_exit((void*)EXIT_SUCCESS);
     }
 
@@ -162,11 +162,6 @@ void *client(void *arg) {
         timersub(&sm_stop, &sm_start, &sm_result);
 
         sm_time = (sm_result.tv_sec*1000000 + sm_result.tv_usec)/1000;
-
-        client_mutex_lock(&clients_inside_lock);
-        clients_inside--;
-        client_cond_signal(&max_clients_inside);
-        client_mutex_unlock(&clients_inside_lock);
 
         read_val = read(ca_2_cl[0], &response, sizeof(int));
         if (read_val < 0) {
@@ -185,7 +180,6 @@ void *client(void *arg) {
         client_cond_signal(&dir_buff_empty);
         client_mutex_unlock(&dir_buff_lock);
 
-        client_clean(ca_2_cl, id);
         pthread_exit((void*)EXIT_SUCCESS);
     }
  
@@ -193,12 +187,6 @@ void *client(void *arg) {
     while (!exit_queue) {
 
         if (quit){ 
-            client_mutex_lock(&clients_inside_lock);
-            clients_inside--;
-            client_cond_signal(&max_clients_inside);
-            client_mutex_unlock(&clients_inside_lock);
-        
-            client_clean(ca_2_cl, id);
             pthread_exit((void*)EXIT_SUCCESS); 
         }
 
@@ -212,12 +200,6 @@ void *client(void *arg) {
         }
 
         if (quit){ 
-            client_mutex_lock(&clients_inside_lock);
-            clients_inside--;
-            client_cond_signal(&max_clients_inside);
-            client_mutex_unlock(&clients_inside_lock);
-        
-            client_clean(ca_2_cl, id);
             pthread_exit((void*)EXIT_SUCCESS);
         }
 
@@ -271,12 +253,7 @@ void *client(void *arg) {
     client_cond_signal(&buff_empty[cashier_id]);
     client_mutex_unlock(&buff_lock[cashier_id]);
 
-    client_mutex_lock(&clients_inside_lock);
-    clients_inside--;
-    client_cond_signal(&max_clients_inside);
-    client_mutex_unlock(&clients_inside_lock);
-
-    client_clean(ca_2_cl, id);
+    pthread_cleanup_pop(1);
     pthread_exit((void*)EXIT_SUCCESS);
 }
 
