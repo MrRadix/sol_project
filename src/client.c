@@ -74,6 +74,8 @@ void client_cleanup(void *cpipe) {
     close(((int*)cpipe)[0]);
     close(((int*)cpipe)[1]);
 
+    free(cpipe);
+
     client_mutex_lock(&opened_pipes_lock);
     opened_pipes--;
 
