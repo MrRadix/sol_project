@@ -37,16 +37,6 @@ void cashier_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mtx) {
     }
 }
 
-void mask_signals(void) {
-    sigset_t set;
-    
-    sigfillset(&set);
-    if(pthread_sigmask(SIG_SETMASK, &set, NULL) != 0) {
-        perror("client error during mask all sgnals");
-        exit(EXIT_FAILURE);
-    }
-}
-
 void *send_analytics(void *arg) {
     int id      = ((struct analytics_args*)arg)->id;
     int msec    = ((struct analytics_args*)arg)->msec;
@@ -58,8 +48,6 @@ void *send_analytics(void *arg) {
 
     float nsec;
     long sec;
-
-    mask_signals();
 
     nsec = (float)msec*1000000;
     sec = 0;
@@ -152,8 +140,6 @@ void *cashier(void *arg) {
     int message;
 
     free(arg);
-
-    mask_signals();
 
     a_args->id = id;
     a_args->msec = analytics_time;

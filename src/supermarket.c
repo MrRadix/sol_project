@@ -25,6 +25,8 @@ void set_sig_handler(void) {
         exit(EXIT_FAILURE);
     }
 
+    pthread_sigmask(SIG_SETMASK, &set, NULL);
+
     memset(&action, 0, sizeof(action));
 
     action.sa_handler = quit_handler;
@@ -57,8 +59,7 @@ void set_sig_handler(void) {
     pthread_sigmask(SIG_SETMASK, &set, NULL);
 }
 
-void strstrip(char **string)
-{
+void strstrip(char **string) {
     char *filtered = (char*)malloc(strlen(*string)*sizeof(char));
     int i = 0;
     int j = strlen(*string) - 1;

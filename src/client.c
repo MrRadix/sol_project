@@ -117,8 +117,6 @@ void *client(void *arg) {
 
     free(arg);
 
-    mask_signals();
-
     client_mutex_lock(&opened_pipes_lock);
 
     // waits if there are already 500 opened pipes

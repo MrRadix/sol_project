@@ -126,8 +126,6 @@ volatile sig_atomic_t quit;
  */
 volatile sig_atomic_t closing;
 
-void mask_signals(void);
-
 void *cashier(void *arg);
 void cashier_thread_init(int n_cashiers, int n_clients);
 void cashier_thread_clear(int n_cashiers, int n_clients);
