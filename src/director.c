@@ -16,6 +16,8 @@
             printf s; \
             printf ("\033%s", COLOR_RESET); \
             fflush(stdout);
+#else 
+#define DEBUG_PRINT(s, color)
 #endif
 
 void director_mutex_lock(pthread_mutex_t *mtx) {
@@ -374,7 +376,7 @@ void *cashiers_handler(void *arg) {
             director_cond_signal(cash_q[i].empty);
 
             pthread_join(cashiers_thread[i], NULL);
-            
+
             DEBUG_PRINT(("[+] Closed cashier: %d\n", i), RED);
         }
     }
