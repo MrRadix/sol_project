@@ -1,4 +1,4 @@
-CC 		= gcc
+CC 			= gcc
 CFLAGS 		+= -Wall -pedantic -std=c99
 THREADS		= -pthread
 
