@@ -121,7 +121,7 @@ void *clients_handler(void *arg) {
          * waits if clients inside supermarket are more than c-e
          */
         director_mutex_lock(&clients_inside_lock);
-        while (clients_inside >= c-e && !closing && !quit) {
+        while (clients_inside > c-e && !closing && !quit) {
             director_cond_wait(&max_clients_inside, &clients_inside_lock);
         }
         director_mutex_unlock(&clients_inside_lock);
@@ -256,7 +256,7 @@ void *cashiers_handler(void *arg) {
         remaining_clients = clients_inside;
         director_mutex_unlock(&clients_inside_lock);
 
-        DEBUG_PRINT(("[+] Remaining clients: %d\n", remaining_clients), CYAN);
+        DEBUG_PRINT(("[+] Remaining clients: %d\n", clients_inside), YELLOW);
         
         if (closing && remaining_clients == 0) {
             break;
