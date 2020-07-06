@@ -455,7 +455,7 @@ void *director(void *arg) {
     free(ca_h_args);
     free(cl_h_args);
 
-    DEBUG_PRINT(("[+] Creating log\n"), BLUE);
+    DEBUG_PRINT(("[+] Creating log\n"), CYAN);
 
     /**
      * writing log file
