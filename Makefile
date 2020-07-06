@@ -13,6 +13,7 @@ DEFINES		= -D_POSIX_SOURCE=200809L -D_DEFAULT_SOURCE
 INCLUDES	= -I$(INCDIR)
 LDFLAGS		= -L$(LIBDIR)
 LIBS 		= -ltsqueue -lpthread -llinkedlist
+DEBUG		= -D_DEBUG
 
 TARGET = $(BINDIR)/supermarket
 
@@ -31,9 +32,9 @@ $(BUILDDIR)/supermarket.o : $(SRCDIR)/supermarket.c
 	@mkdir $(BUILDDIR) 2>/dev/null || true
 	$(CC) $(CFLAGS) $(INCLUDES) $(DEFINES) -g -c $^ -o $@
 
-$(BUILDDIR)/%.o : $(SRCDIR)/%.c $(INCDIR)/%.h
+$(BUILDDIR)/%.o : $(SRCDIR)/%.c $(INCDIR)/%.h $(INCDIR)/colors.h
 	@mkdir $(BUILDDIR) 2>/dev/null || true
-	$(CC) $(CFLAGS) $(INCLUDES) $(DEFINES) -g -c $< -o $@
+	$(CC) $(CFLAGS) $(INCLUDES) $(DEFINES) $(DEBUG) -g -c $< -o $@
 
 $(LIBDIR)/libtsqueue.a : $(BUILDDIR)/tsqueue.o
 	@mkdir $(LIBDIR) 2>/dev/null || true

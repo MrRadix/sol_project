@@ -8,6 +8,15 @@
 #include <signal.h>
 #include <sched.h>
 #include <string.h>
+#include "colors.h"
+
+#ifdef _DEBUG
+#define DEBUG_PRINT(s, color) \
+            printf ("\033%s", color); \
+            printf s; \
+            printf ("\033%s", COLOR_RESET); \
+            fflush(stdout);
+#endif
 
 void director_mutex_lock(pthread_mutex_t *mtx) {
     int err;
@@ -46,6 +55,16 @@ void director_cond_signal(pthread_cond_t *cond) {
         errno = err;
         perror("director error unlock");
         pthread_exit((void*)EXIT_FAILURE);
+    }
+}
+
+static void mask_signals(void) {
+    sigset_t set;
+    
+    sigfillset(&set);
+    if(pthread_sigmask(SIG_SETMASK, &set, NULL) != 0) {
+        perror("client error during mask all sgnals");
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -88,8 +107,6 @@ void *clients_handler(void *arg) {
     int p = ((struct clients_handler_args *)arg)->n_max_products;
     int remaining_clients;
 
-    mask_signals();
-
     int id = 0;
     pthread_t client_thread;
     struct client_args *args;
@@ -112,7 +129,6 @@ void *clients_handler(void *arg) {
         }
 
         director_mutex_lock(&clients_inside_lock);
-
 
         /**
          * starts c-clients_inside clients
@@ -207,8 +223,6 @@ void *cashiers_handler(void *arg) {
     int cashier_open = 0;
     int i;
 
-    mask_signals();
-
     for (i = 0; i<def_number; i++) {
         state[i] = 1;
     }
@@ -237,6 +251,8 @@ void *cashiers_handler(void *arg) {
         director_mutex_lock(&clients_inside_lock);
         remaining_clients = clients_inside;
         director_mutex_unlock(&clients_inside_lock);
+
+        DEBUG_PRINT(("[+] Remaining clients: %d\n", remaining_clients), CYAN);
         
         if (closing && remaining_clients == 0) {
             break;
@@ -301,6 +317,8 @@ void *cashiers_handler(void *arg) {
             open_cashiers--;
 
             pthread_join(cashiers_thread[i], NULL);
+
+            DEBUG_PRINT(("[+] Closed cashier: %d\n", i), RED);
         }
 
         /** 
@@ -333,6 +351,8 @@ void *cashiers_handler(void *arg) {
             ca_args->prod_time = prod_time;
 
             pthread_create(&cashiers_thread[i], NULL, cashier, (void*)ca_args);
+            
+            DEBUG_PRINT(("[+] Opened cashier: %d\n", i), GREEN);
         }
 
         free(data);
@@ -428,6 +448,8 @@ void *director(void *arg) {
 
     free(ca_h_args);
     free(cl_h_args);
+
+    DEBUG_PRINT(("[+] Creating log\n"), BLUE);
 
     /**
      * writing log file
