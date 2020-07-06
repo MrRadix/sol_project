@@ -243,7 +243,9 @@ void *cashiers_handler(void *arg) {
         state[i] = 1;
         director_mutex_unlock(&state_lock[i]);
 
-        pthread_create(&cashiers_thread[i], NULL, cashier, (void *)ca_args); 
+        pthread_create(&cashiers_thread[i], NULL, cashier, (void *)ca_args);
+        
+        DEBUG_PRINT(("[+] Opened cashier: %d\n", i), GREEN);
     }
 
     while (!quit) {
@@ -372,6 +374,8 @@ void *cashiers_handler(void *arg) {
             director_cond_signal(cash_q[i].empty);
 
             pthread_join(cashiers_thread[i], NULL);
+            
+            DEBUG_PRINT(("[+] Closed cashier: %d\n", i), RED);
         }
     }
 
