@@ -155,3 +155,7 @@ All’interno della directory contenente il *Makefile* digitare:
     $ make test
 
 Si consiglia di eseguire make test con il terminale a schermo intero cosi da evitare che l’output non venga formattato correttamente.
+Di default il programma stamperà a schermo delle informazioni di debug, per non vederle basta cambiare la riga 37 del Makefile eliminando *$(DEBUG)* e ricompilare con:
+
+    $ make clean
+    $ make

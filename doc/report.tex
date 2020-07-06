@@ -197,7 +197,12 @@ $ make
 $ make test
 \end{lstlisting} 
 
-	Si consiglia di eseguire make test con il terminale a schermo intero cosi da evitare che l'output non venga formattato correttamente.
+	Si consiglia di eseguire make test con il terminale a schermo intero cosi da evitare che l'output non venga formattato correttamente. \\
+	Di default il programma stamperà a schermo delle informazioni di debug, per non vederle basta cambiare la riga 37 del Makefile eliminando \textit{\$(DEBUG)} e ricompilare con:
+\begin{lstlisting}
+$ make clean
+$ make
+\end{lstlisting} 
 	
 	
 	
