@@ -159,3 +159,29 @@ Di default il programma stamperà a schermo delle informazioni di debug, per non
 
     $ make clean
     $ make
+
+Output di esempio
+=================
+
+* File di configurazione:
+```
+K 6
+C 5
+E 3
+T 200
+P 100
+INITKN 2
+PRODTIME 20
+ANALYTICS_T 3000
+ANALYTICS_DIFF 1
+LOG_FN test_out.log
+S1 2
+S2 3
+```
+
+* Invio SIGHUP dopo 10 secondi
+
+![Output example](output_example.png)
+
+
+
